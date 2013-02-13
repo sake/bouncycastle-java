@@ -15,6 +15,7 @@ import org.bouncycastle.asn1.oiw.OIWObjectIdentifiers;
 import org.bouncycastle.asn1.pkcs.PKCSObjectIdentifiers;
 import org.bouncycastle.asn1.pkcs.RSASSAPSSparams;
 import org.bouncycastle.asn1.teletrust.TeleTrusTObjectIdentifiers;
+import org.bouncycastle.asn1.ua.UAObjectIdentifiers;
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
 import org.bouncycastle.asn1.x9.X9ObjectIdentifiers;
 import org.bouncycastle.util.Strings;
@@ -79,6 +80,8 @@ public class DefaultSignatureAlgorithmIdentifierFinder
         algorithms.put("GOST3411WITHECGOST3410", CryptoProObjectIdentifiers.gostR3411_94_with_gostR3410_2001);
         algorithms.put("GOST3411WITHECGOST3410-2001", CryptoProObjectIdentifiers.gostR3411_94_with_gostR3410_2001);
         algorithms.put("GOST3411WITHGOST3410-2001", CryptoProObjectIdentifiers.gostR3411_94_with_gostR3410_2001);
+        algorithms.put("GOST3411WITHDSTU4145", UAObjectIdentifiers.dstu4145be);
+        algorithms.put("GOST3411WITHDSTU4145LE", UAObjectIdentifiers.dstu4145le);
                
         //
         // According to RFC 3279, the ASN.1 encoding SHALL (id-dsa-with-sha1) or MUST (ecdsa-with-SHA*) omit the parameters field.
@@ -101,6 +104,11 @@ public class DefaultSignatureAlgorithmIdentifierFinder
         noParams.add(CryptoProObjectIdentifiers.gostR3411_94_with_gostR3410_94);
         noParams.add(CryptoProObjectIdentifiers.gostR3411_94_with_gostR3410_2001);
 
+        //
+        // DSTU 4145
+        //
+        noParams.add(UAObjectIdentifiers.dstu4145be);
+        noParams.add(UAObjectIdentifiers.dstu4145le);
         //
         // PKCS 1.5 encrypted  algorithms
         //
@@ -147,6 +155,8 @@ public class DefaultSignatureAlgorithmIdentifierFinder
         digestOids.put(TeleTrusTObjectIdentifiers.rsaSignatureWithripemd256, TeleTrusTObjectIdentifiers.ripemd256);
         digestOids.put(CryptoProObjectIdentifiers.gostR3411_94_with_gostR3410_94, CryptoProObjectIdentifiers.gostR3411);
         digestOids.put(CryptoProObjectIdentifiers.gostR3411_94_with_gostR3410_2001, CryptoProObjectIdentifiers.gostR3411);
+        digestOids.put(UAObjectIdentifiers.dstu4145be, CryptoProObjectIdentifiers.gostR3411); // dstu 4145 uses the gost digest
+        digestOids.put(UAObjectIdentifiers.dstu4145le, CryptoProObjectIdentifiers.gostR3411);
     }
 
     private static AlgorithmIdentifier generate(String signatureAlgorithm)

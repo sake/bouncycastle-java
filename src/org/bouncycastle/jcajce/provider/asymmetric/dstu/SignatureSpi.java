@@ -151,7 +151,7 @@ public class SignatureSpi
 
             byte[] sigBytes = new byte[(r.length > s.length ? r.length * 2 : s.length * 2)];
             System.arraycopy(s, 0, sigBytes, (sigBytes.length / 2) - s.length, s.length);
-            System.arraycopy(r, 0, sigBytes, sigBytes.length - r.length, s.length);
+            System.arraycopy(r, 0, sigBytes, sigBytes.length - r.length, r.length);
 
             return new DEROctetString(sigBytes).getEncoded();
         }
