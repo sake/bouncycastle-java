@@ -325,7 +325,7 @@ public class OAEPTest
         //
         RSAPrivateKey privStruct;
 
-        privStruct = RSAPrivateKey.getInstance(new PrivateKeyInfo((ASN1Sequence)dIn.readObject()).parsePrivateKey());
+        privStruct = RSAPrivateKey.getInstance(PrivateKeyInfo.getInstance(dIn.readObject()).parsePrivateKey());
 
         RSAKeyParameters    pubParameters = new RSAKeyParameters(
                                                     false,

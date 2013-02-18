@@ -16,7 +16,6 @@ import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.PBEKeySpec;
 import javax.crypto.spec.PBEParameterSpec;
 
-import org.bouncycastle.asn1.pkcs.EncryptionScheme;
 import org.bouncycastle.asn1.pkcs.KeyDerivationFunc;
 import org.bouncycastle.asn1.pkcs.PBEParameter;
 import org.bouncycastle.asn1.pkcs.PBES2Parameters;
@@ -71,7 +70,7 @@ public class JceOpenSSLPKCS8DecryptorProviderBuilder
                     {
                         PBES2Parameters params = PBES2Parameters.getInstance(algorithm.getParameters());
                         KeyDerivationFunc func = params.getKeyDerivationFunc();
-                        EncryptionScheme scheme = params.getEncryptionScheme();
+                        KeyDerivationFunc scheme = params.getEncryptionScheme();
                         PBKDF2Params defParams = (PBKDF2Params)func.getParameters();
 
                         int iterationCount = defParams.getIterationCount().intValue();

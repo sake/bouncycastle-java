@@ -57,7 +57,9 @@ import org.bouncycastle.pkcs.bc.BcPKCS12PBEInputDecryptorProviderBuilder;
 import org.bouncycastle.pkcs.bc.BcPKCS12PBEOutputEncryptorBuilder;
 import org.bouncycastle.pkcs.jcajce.JcaPKCS12SafeBagBuilder;
 import org.bouncycastle.pkcs.jcajce.JcaPKCS8EncryptedPrivateKeyInfoBuilder;
+import org.bouncycastle.pkcs.jcajce.JcePKCSPBEInputDecryptorProviderBuilder;
 import org.bouncycastle.util.Arrays;
+import org.bouncycastle.util.encoders.Base64;
 
 public class PfxPduTest
     extends TestCase
@@ -117,6 +119,42 @@ public class PfxPduTest
         new BigInteger("6c929e4e81672fef49d9c825163fec97c4b7ba7acb26c0824638ac22605d7201c94625770984f78a56e6e25904fe7db407099cad9b14588841b94f5ab498dded", 16),
         new BigInteger("dae7651ee69ad1d081ec5e7188ae126f6004ff39556bde90e0b870962fa7b926d070686d8244fe5a9aa709a95686a104614834b0ada4b10f53197a5cb4c97339", 16));
 
+    private String sha256Pass = "D317F8D5191F2602C527F8E6E0E8855C4517EC9512F7A06A7A588ACF0B3A6325";
+
+    private byte[] sha256Pfx = Base64.decode(
+        "MIIFvwIBAzCCBXEGCSqGSIb3DQEHAaCCBWIEggVeMIIFWjCCBVYGCSqGSIb3"
+            + "DQEHAaCCBUcEggVDMIIFPzCCBTsGCyqGSIb3DQEMCgECoIIFKjCCBSYwUAYJ"
+            + "KoZIhvcNAQUNMEMwIgYJKoZIhvcNAQUMMBUEEFEZik5RaSrwXtrWCnaLzAQC"
+            + "AQEwHQYJYIZIAWUDBAEqBBBTqY5oFOjZxnBBtWchzf0TBIIE0Pcvwtwthm8d"
+            + "yR16f5yqtofxGzJ0aAbCF7JJ+XsL9QhNuqndTtnXits+E2WgNwwm24XyRhPA"
+            + "obAwqz+DvH+gdUbKoN/gCEp+/6xhlwMQZyjyqi5ePznwLQ/bJueqmXZDT+pO"
+            + "zTIeMXMF0YaSjcZZ4FJnZtBX7XQDEAPmialrknhcSZI5RoLjOzFv51FgYd9+"
+            + "nWdtWlRINS9LrGCVL+y8wwHp55tWEoCR2/o9YWFMYNrUkVUUzImHCN1fkbIH"
+            + "XQxPp5fUqP00kwYY4288JZrzHGWGmSVYm54ok5YRLpCs0yhB0ve//iH/fNNO"
+            + "esShfBTUcRCc086skxgoCVWBZERyVJHWkKl/Q4RVzYt70k2/Qfq/xBNwVCrw"
+            + "YiOB0TwSQJKpvRbtufPx2vODfAmhIKes08ZLJHsMJ+O3p99O2rWZslNY7nfx"
+            + "1vWXYLVkHg0q79ThgbP4p0qQQziIVZoF9ViisJTJWzZbfJLdaKPeHcduvXsR"
+            + "lRvfEpR6/lifcxvkloxjpYtM6JEjtvT1x442VRKJWZofkjCohpLSmEDt77FM"
+            + "ENvra7B9ojlY+0DkwNV34FlSRrwi/nVl2XhebI11DfQFEUN+krNoZ3U4n5Sb"
+            + "g0Heibg5mILPwVS5Zh2vEybXzFY6b1XPA7TlGQATm6xBaU+BNFiACp+7+6CZ"
+            + "PxofFKKlWq0+Apx43JDATerwlPBKxLqxxgo0xTJUtL8OKnt6oSFX4P6O6AgX"
+            + "D9Pz3dzdWW9ga65N2qEmqpeIsd6SB4eGRJ1Vf1ePDgdVBUD9DG/eWfpn8l1T"
+            + "neg7wsQOGDrX00uDfio/WrjRBOw37IfToqJ/j6y/Ybggg5tldvCNoxq/42rC"
+            + "RvP0GJH+LJAHgB9sOWbksR7tKizWeFEyHwrAQfYc8aIZocApObtsZp8O5nuI"
+            + "MNcSCc77WZfVacrJzssKki1YHPoZeTYb9q4DRm0F6Rk+bqyvd7vs2DyLN7jT"
+            + "bkWoSoyCw8PAOuc8Q/+X3jhs18RQGzsEpeTOHoYJWeTUxgPrPqDFNKNLhD+L"
+            + "7mvDM7EvB08tVfLTSMeVBY+RUW6eFCbdlHfqszvp9pFZPNxQHtgbAYplwK6J"
+            + "i24gCH2UMF+BNzdcN2Fw9vP3nao+mzjtY1HuYebDDNNxgBAEoUFS4jr1YLoa"
+            + "+li3A9T/NqSf+J5OwASsSsp0YttAJQ+VU19amwJ141U+04kVc2bUIvSxEyxu"
+            + "UzWfFs26J1FhKzacirtpNv21iH78NHWOgS3jlEZMirpCHtHDbwF0z3V0upJ7"
+            + "cZzMwHJPQIGP4Nk8ei20dEogc/D2ijXHGRKdRjstzi89YXs4iLWjy2lEqhlK"
+            + "IvmlbF/snra1He2En/TFYv7m1zMuEPtS/+DTcwzqoe10Lko+2bNlOikW58u/"
+            + "OdAlteo1IissecMjL6743ttt8SAwx9gpAn6XHaIfFL1jiGKUQPJ5Mx9RUzfB"
+            + "lsKzHLNWmrDCZtR4BC4A21aRUueDGgRbtiOCYLbVtoiTc2XWM5juahaWCNKm"
+            + "4+ENQNOPrB4rJUeWJquNOj9+Brhe6pWWfi4EYVBuWlbTQB7u3uP9lnYvQHSo"
+            + "nOjkhjwEhPZneaKctEqXx2LoYc8arY1LSSpaXORcOJc/LkgVCq3bBEDNCJrZ"
+            + "DBOUpcPXDj43MEUwMTANBglghkgBZQMEAgEFAAQgdWQUVEirOjgax8qJhjqC"
+            + "bArDHuZQQvCmtrjqyhWbI4MEENBoJ4T1+xY5fmdiwmoXPPM=");
 
     /**
      * we generate the CA's certificate
@@ -471,6 +509,42 @@ public class PfxPduTest
         catch (IllegalArgumentException e)
         {
 
+        }
+    }
+
+    public void testSHA256withPKCS5()
+        throws Exception
+    {
+        InputDecryptorProvider inputDecryptorProvider = new JcePKCSPBEInputDecryptorProviderBuilder()
+                                                              .setProvider("BC").build(sha256Pass.toCharArray());
+        PKCS12PfxPdu pfx = new PKCS12PfxPdu(sha256Pfx);
+
+        ContentInfo[] infos = pfx.getContentInfos();
+
+        for (int i = 0; i != infos.length; i++)
+        {
+            if (infos[i].getContentType().equals(PKCSObjectIdentifiers.encryptedData))
+            {
+                PKCS12SafeBagFactory dataFact = new PKCS12SafeBagFactory(infos[i], inputDecryptorProvider);
+
+                PKCS12SafeBag[] bags = dataFact.getSafeBags();
+
+                // TODO: finish!
+//                assertEquals(3, bags.length);
+//                assertEquals(PKCSObjectIdentifiers.certBag, bags[0].getType());
+            }
+            else
+            {
+                PKCS12SafeBagFactory dataFact = new PKCS12SafeBagFactory(infos[i]);
+
+                PKCS12SafeBag[] bags = dataFact.getSafeBags();
+
+                assertEquals(1, bags.length);
+                assertEquals(PKCSObjectIdentifiers.pkcs8ShroudedKeyBag, bags[0].getType());
+
+                PKCS8EncryptedPrivateKeyInfo encInfo = (PKCS8EncryptedPrivateKeyInfo)bags[0].getBagValue();
+                PrivateKeyInfo info = encInfo.decryptPrivateKeyInfo(inputDecryptorProvider);
+            }
         }
     }
 

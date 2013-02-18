@@ -47,7 +47,7 @@ public class DERTest
         ByteArrayInputStream    bIn = new ByteArrayInputStream(data);
         DERInputStream          dIn = new DERInputStream(bIn);
 
-        info = new PrivateKeyInfo((ASN1Sequence)dIn.readObject());
+        info = PrivateKeyInfo.getInstance(dIn.readObject());
         priv = new RSAPrivateKeyStructure((ASN1Sequence)info.getPrivateKey());
 
         System.out.println(
