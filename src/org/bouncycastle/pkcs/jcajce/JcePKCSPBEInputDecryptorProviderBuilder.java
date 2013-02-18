@@ -83,6 +83,7 @@ public class JcePKCSPBEInputDecryptorProviderBuilder
         {
             private Cipher cipher;
             private SecretKey key;
+            private AlgorithmIdentifier encryptionAlg;
 
             public InputDecryptor get(final AlgorithmIdentifier algorithmIdentifier)
                 throws OperatorCreationException
@@ -110,6 +111,8 @@ public class JcePKCSPBEInputDecryptorProviderBuilder
                         cipher = helper.createCipher(algorithm.getId());
 
                         cipher.init(Cipher.DECRYPT_MODE, key, defParams);
+
+                        encryptionAlg = algorithmIdentifier;
                     }
                     else if (algorithm.equals(PKCSObjectIdentifiers.id_PBES2))
                     {
@@ -121,6 +124,8 @@ public class JcePKCSPBEInputDecryptorProviderBuilder
                         key = keyFact.generateSecret(new PBEKeySpec(password, func.getSalt(), func.getIterationCount().intValue(), getKeySize(alg)));
 
                         cipher = helper.createCipher(alg.getEncryptionScheme().getAlgorithm().getId());
+
+                        encryptionAlg = AlgorithmIdentifier.getInstance(alg.getEncryptionScheme());
 
                         cipher.init(Cipher.DECRYPT_MODE, key, new IvParameterSpec(ASN1OctetString.getInstance(alg.getEncryptionScheme().getParameters()).getOctets()));
                     }
@@ -134,7 +139,7 @@ public class JcePKCSPBEInputDecryptorProviderBuilder
                 {
                     public AlgorithmIdentifier getAlgorithmIdentifier()
                     {
-                        return algorithmIdentifier;
+                        return encryptionAlg;
                     }
 
                     public InputStream getInputStream(InputStream input)
@@ -144,7 +149,7 @@ public class JcePKCSPBEInputDecryptorProviderBuilder
 
                     public GenericKey getKey()
                     {
-                        return new JceGenericKey(algorithmIdentifier, key);
+                        return new JceGenericKey(encryptionAlg, key);
                     }
                 };
             }
