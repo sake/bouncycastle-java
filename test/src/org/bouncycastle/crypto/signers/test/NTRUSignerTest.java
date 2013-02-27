@@ -28,14 +28,14 @@ import java.util.Random;
 
 import junit.framework.TestCase;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
-import org.bouncycastle.crypto.generators.NTRUSigningKeyPairGenerator;
-import org.bouncycastle.crypto.params.NTRUSigningKeyGenerationParameters;
-import org.bouncycastle.crypto.params.NTRUSigningParameters;
-import org.bouncycastle.crypto.params.NTRUSigningPrivateKeyParameters;
-import org.bouncycastle.crypto.params.NTRUSigningPublicKeyParameters;
-import org.bouncycastle.crypto.signers.NTRUSigner;
-import org.bouncycastle.math.ntru.polynomial.IntegerPolynomial;
-import org.bouncycastle.math.ntru.polynomial.Polynomial;
+import org.bouncycastle.pqc.crypto.ntru.NTRUSigningKeyPairGenerator;
+import org.bouncycastle.pqc.crypto.ntru.NTRUSigningKeyGenerationParameters;
+import org.bouncycastle.pqc.crypto.ntru.NTRUSigningParameters;
+import org.bouncycastle.pqc.crypto.ntru.NTRUSigningPrivateKeyParameters;
+import org.bouncycastle.pqc.crypto.ntru.NTRUSigningPublicKeyParameters;
+import org.bouncycastle.pqc.crypto.ntru.NTRUSigner;
+import org.bouncycastle.pqc.math.ntru.polynomial.IntegerPolynomial;
+import org.bouncycastle.pqc.math.ntru.polynomial.Polynomial;
 import org.bouncycastle.util.Arrays;
 
 public class NTRUSignerTest

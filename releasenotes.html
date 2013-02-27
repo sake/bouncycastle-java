@@ -27,12 +27,18 @@ Release 1.49
 <ul>
 <li>Occasional ArrayOutOfBounds exception in DSTU-4145 signature generation has been fixed.</li>
 <li>The handling of escaped characters in X500 names is much improved.</li>
+<li>The BC CertificateFactory no longer returns null for CertificateFactory.getCertPathEncodings().</li>
 </ul>
 <h3>2.1.3 Additional Features and Functionality</h3>
 <ul>
 <li>A SecretKeyFactory has been added that enables use of PBKDF2WithHmacSHA.</li>
 <li>Support has been added to PKCS12 KeyStores and PfxPdu to handle PKCS#5 encrypted private keys.</li>
 <li>Support has been added for SHA-512/224, SHA-512-256, as well as a general SHA-512/t in the lightweight API.</li>
+<li>The JcaPGPPrivateKey class has been added to provide better support in the PGP API for HSM private keys.</li>
+</ul>
+<h3>2.1.4 Notes</h3>
+<ul>
+<li>The NTRU implementation has been moved into the org.bouncycastle.pqc package hierarchy</li>
 </ul>
 
 <h3>2.1.1 Version</h3>
