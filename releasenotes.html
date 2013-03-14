@@ -37,6 +37,9 @@ Release 1.49
 <li>Support has been added for SHA-512/224, SHA-512-256, as well as a general SHA-512/t in the lightweight API.</li>
 <li>The JcaPGPPrivateKey class has been added to provide better support in the PGP API for HSM private keys.</li>
 <li>A new KeyStore type, BKS-V1, has been added for people needing to create key stores compatible with earlier versions of Bouncy Castle.</li>
+<li>Some extra generation methods have been added to TimeStampResponseGenerator to allow more control in the generation of TimeStampResponses.</li>
+<li>It is now possible to override the SignerInfo attributes during TimeStampTokenGeneration.</li>
+<li>The TSP API now supports generation of certIDs based on digests other than SHA-1.</li>
 </ul>
 <h3>2.1.4 Notes</h3>
 <ul>
