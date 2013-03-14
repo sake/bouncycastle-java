@@ -40,15 +40,16 @@ Release 1.49
 <li>Some extra generation methods have been added to TimeStampResponseGenerator to allow more control in the generation of TimeStampResponses.</li>
 <li>It is now possible to override the SignerInfo attributes during TimeStampTokenGeneration.</li>
 <li>The TSP API now supports generation of certIDs based on digests other than SHA-1.</li>
+<li>OCSP responses can now be included in CMS SignedData objects.</li>
 </ul>
 <h3>2.1.4 Notes</h3>
 <ul>
 <li>The NTRU implementation has been moved into the org.bouncycastle.pqc package hierarchy</li>
 </ul>
 
-<h3>2.1.1 Version</h3>
+<h3>2.2.1 Version</h3>
 Release 1.48
-<h3>2.1.2 Defects Fixed</h3>
+<h3>2.2.2 Defects Fixed</h3>
 <ul>
 <li>Occasional key compatibility issues in IES due to variable length keys have been fixed.</li>
 <li>PEMWriter now recognises the new PKCS10CertificationRequest object.</li>
@@ -60,7 +61,7 @@ Release 1.48
 <li>A regression in 1.47 which prevented key wrapping with regular symmetric PBE algorihtms has been fixed.</li>
 </ul>
 
-<h3>2.1.3 Additional Features and Functionality</h3>
+<h3>2.2.3 Additional Features and Functionality</h3>
 <ul>
 <li>IES now supports auto generation of ephemeral keys in both the JCE and the lightweight APIs.</li>
 <li>A new class PEMParser has been added to return the new CertificateHolder and Request objects introduced recently.</li>
@@ -74,9 +75,9 @@ Release 1.48
 <li>Support has been added for the SHA3 family of digests to both the provider and the lightweight API.</li>
 </ul>
 
-<h3>2.2.1 Version</h3>
+<h3>2.3.1 Version</h3>
 Release 1.47
-<h3>2.2.2 Defects Fixed</h3>
+<h3>2.3.2 Defects Fixed</h3>
 <ul>
 <li>OpenPGP ID based certifications now support UTF-8. Note: this may mean that some old certifications no longer validate - if this happens a retry can be added using by converting the ID using Strings.fromByteArray(Strings.toByteArray(id)) - this will strip out the top byte in each character.</li>
 <li>IPv4/IPv6 parsing in CIDR no longer assumes octet boundaries on a mask.</li>
@@ -93,7 +94,7 @@ Release 1.47
 <li>Check of DH parameter L could reject some valid keys. This is now fixed.</li>
 </ul>
 
-<h3>2.2.3 Additional Features and Functionality</h3>
+<h3>2.3.3 Additional Features and Functionality</h3>
 <ul>
 <li>Support is now provided via the RepeatedKey class to enable IV only re-initialisation in the JCE layer. The same effect can be acheived in the light weight API by using null as the key parameter when creating a ParametersWithIV object.</li>
 <li>CRMF now supports empty poposkInput.</li>
@@ -113,14 +114,14 @@ Release 1.47
 <li>The J2ME lcrypto release now includes higher level classes for handling PKCS, CMS, CRMF, CMP, EAC, OpenPGP, and certificate generation.</li>
 </ul>
 
-<h3>2.2.4 Other notes</h3>
+<h3>2.3.4 Other notes</h3>
 <p>
 Okay, so we have had to do another release. The issue we have run into is that we probably didn't go far enough in 1.46, but we are now confident that moving from this release to 2.0 should be largely just getting rid of deprecated methods. While this release does change a lot it is relatively straight forward to do a port and we have a <a href="http://www.bouncycastle.org/wiki/display/JA1/Porting+from+earlier+BC+releases+to+1.47+and+later">porting guide</a> which explains the important ones. The area there has been the most change in is the ASN.1 library which was in bad need of a rewrite after 10 years of patching. On the bright side the rewrite did allow us to eliminate a few problems and bugs in the ASN.1 library, so we have some hope anyone porting to it will also have similar benefits. As with 1.46 the other point of emphasis has been making sure interface support is available for operations across the major APIs, so the lightweight API or some local role your own methods can be used instead for doing encryption and signing.
 </p>
 
-<h3>2.3.1 Version</h3>
+<h3>2.4.1 Version</h3>
 Release 1.46
-<h3>2.3.2 Defects Fixed</h3>
+<h3>2.4.2 Defects Fixed</h3>
 <ul>
 <li>An edge condition in ECDSA which could result in an invalid signature has been fixed.</li>
 <li>Exhaustive testing has been performed on the ASN.1 parser, eliminating another potential OutOfMemoryException and several escaping run time exceptions.</li>
@@ -129,7 +130,7 @@ Release 1.46
 <li>DERGeneralizedTime.getDate() would produce incorrect results for fractional seconds. This has been fixed.</li>
 <li>PSSSigner would produce incorrect results if the MGF digest and content digest were not the same. This has been fixed.</li>
 </ul>
-<h3>2.3.3 Additional Features and Functionality</h3>
+<h3>2.4.3 Additional Features and Functionality</h3>
 <ul>
 <li>A null genTime can be passed to TimeStampResponseGenerator.generate() to generate timeNotAvailable error responses.</li>
 <li>Support has been added for reading and writing of openssl PKCS#8 encrypted keys.</li>
@@ -146,7 +147,7 @@ Release 1.46
 <li>PGP public subkeys can now be separately decoded and encoded.</li>
 <li>An IV can now be passed to an ISO9797Alg3Mac.</li>
 </ul>
-<h3>2.3.4 Other notes</h3>
+<h3>2.4.4 Other notes</h3>
 <p>
 Baring security patches we expect 1.46 will be the last of the 1.* releases. The next release of
 BC will be version 2.0. For this reason a lot of things in 1.46 that relate to CMS have been deprecated and
@@ -164,27 +165,27 @@ So there are four things useful to know about this release:
 <li>The org.bouncycastle.cms.RecipientId class now has a collection of subclasses to allow for more specific recipient matching. If you are creating your own recipient ids you should use the constructors for the subclasses rather than relying on the set methods inherited from X509CertSelector. The dependencies on X509CertSelector and CertStore will be removed from the version 2 CMS API.</li>
 </ul>
 </p>
-<h3>2.4.1 Version</h3>
+<h3>2.5.1 Version</h3>
 Release 1.45
-<h3>2.4.2 Defects Fixed</h3>
+<h3>2.5.2 Defects Fixed</h3>
 <ul>
 <li>OpenPGP now supports UTF-8 in file names for literal data.</li>
 <li>The ASN.1 library was losing track of the stream limit in a couple of places, leading to the potential of an OutOfMemoryError on a badly corrupted stream. This has been fixed.</li>
 <li>The provider now uses a privileged block for initialisation.</li>
 <li>JCE/JCA EC keys are now serialisable.</li>
 </ul>
-<h3>2.4.3 Additional Features and Functionality</h3>
+<h3>2.5.3 Additional Features and Functionality</h3>
 <ul>
 <li>Support for EC MQV has been added to the light weight API, provider, and the CMS/SMIME library.</li>
 </ul>
-<h3>2.4.4 Security Advisory</h3>
+<h3>2.5.4 Security Advisory</h3>
 <ul>
 <li>This version of the provider has been specifically reviewed to eliminate possible timing attacks on algorithms such as GCM and CCM mode.</li>
 </ul>
 
-<h3>2.5.1 Version</h3>
+<h3>2.6.1 Version</h3>
 Release 1.44
-<h3>2.5.2 Defects Fixed</h3>
+<h3>2.6.2 Defects Fixed</h3>
 <ul>
 <li>The reset() method in BufferedAsymmetricBlockCipher is now fully clearing the buffer.</li>
 <li>Use of ImplicitlyCA with KeyFactory and Sun keyspec no longer causes NullPointerException.</li>
@@ -200,7 +201,7 @@ Release 1.44
 <li>PKIXCertPathReviewer.getTrustAnchor() could occasionally cause a null pointer exception or an exception due to conflicting trust anchors. This has been fixed.</li>
 <li>Handling of explicit CommandMap objects with the generation of S/MIME messages has been improved.</li>
 </ul>
-<h3>2.5.3 Additional Features and Functionality</h3>
+<h3>2.6.3 Additional Features and Functionality</h3>
 <ul>
 <li>PEMReader/PEMWriter now support encrypted EC keys.</li>
 <li>BC generated EC private keys now include optional fields required by OpenSSL.</li>
@@ -216,22 +217,22 @@ Release 1.44
 <li>Support for raw signatures has been extended to RSA and RSA-PSS in the provider. RSA support can be used in CMSSignedDataStreamGenerator to support signatures without signed attributes.</li>
 </ul>
 
-<h3>2.6.1 Version</h3>
+<h3>2.7.1 Version</h3>
 Release 1.43
-<h3>2.6.2 Defects Fixed</h3>
+<h3>2.7.2 Defects Fixed</h3>
 <ul>
 <li>Multiple countersignature attributes are now correctly collected.</li>
 <li>Two bugs in HC-128 and HC-256 related to sign extension and byte swapping have been fixed. The implementations now pass the latest ecrypt vector tests.</li>
 <li>X509Name.hashCode() is now consistent with equals.</li>
 </ul>
-<h3>2.6.3 Security Advisory</h3>
+<h3>2.7.3 Security Advisory</h3>
 <ul>
 <li>The effect of the sign extension bug was to decrease the key space the HC-128 and HC-256 ciphers were operating in and the byte swapping inverted every 32 bits of the generated stream. If you are using either HC-128 or HC-256 you must upgrade to this release.</li>
 </ul>
 
-<h3>2.7.1 Version</h3>
+<h3>2.8.1 Version</h3>
 Release 1.42
-<h3>2.7.2 Defects Fixed</h3>
+<h3>2.8.2 Defects Fixed</h3>
 <ul>
 <li>A NullPointer exception which could be result from generating a diffie-hellman key has been fixed.</li>
 <li>CertPath validation could occasionally mistakenly identify a delta CRL. This has been fixed.</li>
@@ -244,7 +245,7 @@ Release 1.42
 <li>Multiplication by negative powers of two is fixed in BigInteger.</li>
 <li>OptionalValidity now encodes correctly.</li>
 </ul>
-<h3>2.7.3 Additional Features and Functionality</h3>
+<h3>2.8.3 Additional Features and Functionality</h3>
 <ul>
 <li>Support for NONEwithECDSA has been added.</li>
 <li>Support for Grainv1 and Grain128 has been added.</li>
@@ -255,9 +256,9 @@ Release 1.42
 <li>Support for the SRP-6a protocol has been added to the lightweight API.</li>
 </ul>
 
-<h3>2.8.1 Version</h3>
+<h3>2.9.1 Version</h3>
 Release 1.41
-<h3>2.8.2 Defects Fixed</h3>
+<h3>2.9.2 Defects Fixed</h3>
 <ul>
 <li>The GeneralName String constructor now supports IPv4 and IPv6 address parsing.</li>
 <li>An issue with nested-multiparts with postamble for S/MIME that was causing signatures to fail verification has been fixed.</li>
@@ -268,7 +269,7 @@ Release 1.41
 <li>Standard name "DiffieHellman" is now supported in the provider.</li>
 <li>Better support for equality tests for '#' encoded entries has been added to X509Name.</li>
 </ul>
-<h3>2.8.3 Additional Features and Functionality</h3>
+<h3>2.9.3 Additional Features and Functionality</h3>
 <ul>
 <li>Camellia is now 12.5% faster than previously.</li>
 <li>A smaller version (around 8k compiled) of Camellia, CamelliaLightEngine has also been added.</li>
@@ -279,9 +280,9 @@ Release 1.41
 <li>Support for reading and extracting personalised certificates in PGP Secret Key rings has been added.</li>
 </ul>
 
-<h3>2.9.1 Version</h3>
+<h3>2.10.1 Version</h3>
 Release 1.40
-<h3>2.9.2 Defects Fixed</h3>
+<h3>2.10.2 Defects Fixed</h3>
 <ul>
 <li>EAX mode ciphers were not resetting correctly after a doFinal/reset. This has been fixed.</li>
 <li>The SMIME API was failing to verify doubly nested multipart objects in signatures correctly. This has been fixed.</li>
@@ -297,7 +298,7 @@ Release 1.40
 <li>The '+' character can now be escaped or quoted in the constructor for X509Name, X509Prinicipal.</li>
 <li>Fix to regression from 1.38: PKIXCertPathValidatorResult.getPublicKey was returning the wrong public key when the BC certificate path validator was used.</li>
 </ul>
-<h3>2.9.3 Additional Features and Functionality</h3>
+<h3>2.10.3 Additional Features and Functionality</h3>
 <ul>
 <li>Galois/Counter Mode (GCM) has been added to the lightweight API and the JCE provider.</li>
 <li>SignedPublicKeyAndChallenge and PKCS10CertificationRequest can now take null providers if you need to fall back to the default provider mechanism.</li>
@@ -305,7 +306,7 @@ Release 1.40
 <li>Unnecessary local ID attributes on certificates in PKCS12 files are now automatically removed.</li>
 <li>The PKCS12 store types PKCS12-3DES-3DES and PKCS12-DEF-3DES-3DES have been added to support generation of PKCS12 files with both certificates and keys protected by 3DES.</li>
 </ul>
-<h3>2.9.4 Additional Notes</h3>
+<h3>2.10.4 Additional Notes</h3>
 <ul>
 <li>Due to problems for some users caused by the presence of the IDEA algorithm, an implementation is no longer included in the default signed jars. Only the providers of the form bcprov-ext-*-*.jar now include IDEA.</li>
 </ul>
