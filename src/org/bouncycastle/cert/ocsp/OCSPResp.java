@@ -128,4 +128,9 @@ public class OCSPResp
     {
         return resp.hashCode();
     }
+
+    public OCSPResponse toASN1Structure()
+    {
+        return resp;
+    }
 }
