@@ -108,6 +108,7 @@ public class RegressionTest
         //new NaccacheSternTest(),
         new SRP6Test(),
         new SCryptTest(),
+        new SipHashTest(),
         new ResetTest(),
         new NullTest(),
         new DSTU4145Test()
