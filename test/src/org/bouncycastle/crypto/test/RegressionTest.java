@@ -108,10 +108,11 @@ public class RegressionTest
         //new NaccacheSternTest(),
         new SRP6Test(),
         new SCryptTest(),
-        new SipHashTest(),
         new ResetTest(),
         new NullTest(),
-        new DSTU4145Test()
+        new DSTU4145Test(),
+        new SipHashTest(),
+        new OCBTest()
     };
 
     public static void main(

@@ -275,6 +275,7 @@
                  <exclude name="org/bouncycastle/mail/**/*.java" />
                  <exclude name="org/bouncycastle/mail/**/*.properties" />
                  <exclude name="org/bouncycastle/cms/**/*.java" />
+                 <exclude name="org/bouncycastle/dvcs/**/*.java" />
                  <exclude name="org/bouncycastle/eac/**/*.java" />
                  <exclude name="org/bouncycastle/cert/**/*.java" />
                  <exclude name="org/bouncycastle/pkcs/**/*.java" />
@@ -364,6 +365,7 @@
                  <exclude name="org/bouncycastle/**/test/*.properties" />
                  <exclude name="org/bouncycastle/mail/**/*.java" />
                  <exclude name="org/bouncycastle/cms/**/*.java" />
+                 <exclude name="org/bouncycastle/dvcs/**/*.java" />
                  <exclude name="org/bouncycastle/eac/**/*.java" />
                  <exclude name="org/bouncycastle/cert/**/*.java" />
                  <exclude name="org/bouncycastle/pkcs/**/*.java" />
@@ -434,6 +436,7 @@
                  <include name="org/bouncycastle/mail/**/*.java" />
                  <include name="org/bouncycastle/mail/**/*.properties" />
                  <include name="org/bouncycastle/cms/**/*.java" />
+                 <include name="org/bouncycastle/dvcs/**/*.java" />
                  <include name="org/bouncycastle/eac/**/*.java" />
                  <include name="org/bouncycastle/cert/**/*.java" />
                  <include name="org/bouncycastle/pkcs/**/*.java" />
@@ -741,12 +744,14 @@
              <fileset dir="${src.dir}">
                  <include name="org/bouncycastle/mail/**/test/*.java" />
                  <include name="org/bouncycastle/cms/**/test/*.java" />
+                 <include name="org/bouncycastle/dvcs/**/test/*.java" />
                  <include name="org/bouncycastle/eac/**/test/*.java" />
                  <include name="org/bouncycastle/cert/**/test/*.java" />
                  <include name="org/bouncycastle/pkcs/**/test/*.java" />
                  <include name="org/bouncycastle/operator/**/test/*.java" />
                  <include name="org/bouncycastle/mail/**/*.html" />
                  <include name="org/bouncycastle/cms/**/*.html" />
+                 <include name="org/bouncycastle/dvcs/**/*.html" />
                  <include name="org/bouncycastle/eac/**/*.html" />
                  <include name="org/bouncycastle/cert/**/*.html" />
                  <include name="org/bouncycastle/pkcs/**/*.html" />
@@ -757,12 +762,14 @@
         <compile-doc srcDir="${mail.target.src.dir}" docsDir="${artifacts.docs.dir}/bcmail">
             <docElements>
                 <package name="org.bouncycastle.cms.*" />
+                <package name="org.bouncycastle.dvcs.*" />
                 <package name="org.bouncycastle.eac.*" />
                 <package name="org.bouncycastle.mail.*" />
                 <package name="org.bouncycastle.cert.*" />
                 <package name="org.bouncycastle.pkcs.*" />
                 <package name="org.bouncycastle.operator.*" />
                 <group title="CMS Packages" packages="org.bouncycastle.cms*" />
+                <group title="DVCS Package" packages="org.bouncycastle.dvcs*" />
                 <group title="Extended Access Control Packages" packages="org.bouncycastle.eac*" />
                 <group title="S/MIME Packages" packages="org.bouncycastle.mail.smime*" />
                 <group title="Certificate Packages" packages="org.bouncycastle.cert*" />

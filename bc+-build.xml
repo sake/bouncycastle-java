@@ -277,6 +277,7 @@
                  <exclude name="org/bouncycastle/bcpg/**" />
                  <exclude name="org/bouncycastle/cert/**" />
                  <exclude name="org/bouncycastle/cms/**" />
+                 <exclude name="org/bouncycastle/dvcs/**" />
                  <exclude name="org/bouncycastle/eac/**" />
                  <exclude name="org/bouncycastle/mail/**" />
                  <exclude name="org/bouncycastle/openpgp/**" />
@@ -370,6 +371,7 @@
                  <exclude name="org/bouncycastle/util/utiltest/**" />
                  <exclude name="org/bouncycastle/mail/**" />
                  <exclude name="org/bouncycastle/cms/**" />
+                 <exclude name="org/bouncycastle/dvcs/**" />
                  <exclude name="org/bouncycastle/eac/**" />
                  <exclude name="org/bouncycastle/cert/**" />
                  <exclude name="org/bouncycastle/pkcs/**" />
@@ -475,6 +477,7 @@
         <copy todir="${pkix.target.src.dir}">
              <fileset dir="${src.dir}">
                  <include name="org/bouncycastle/cms/**/*.java" />
+                 <include name="org/bouncycastle/dvcs/**/*.java" />
                  <include name="org/bouncycastle/eac/**/*.java" />
                  <include name="org/bouncycastle/cert/**/*.java" />
                  <include name="org/bouncycastle/mozilla/**/*.java" />
@@ -770,6 +773,7 @@
         <copy todir="${pkix.target.src.dir}">
              <fileset dir="${src.dir}">
                  <include name="org/bouncycastle/cms/**/test/*.java" />
+                 <include name="org/bouncycastle/dvcs/**/test/*.java" />
                  <include name="org/bouncycastle/eac/**/test/*.java" />
                  <include name="org/bouncycastle/cert/**/test/*.java" />
                  <include name="org/bouncycastle/pkcs/**/test/*.java" />
@@ -777,6 +781,7 @@
                  <include name="org/bouncycastle/mozilla/**/test/*.java" />
                  <include name="org/bouncycastle/operator/**/test/*.java" />
                  <include name="org/bouncycastle/cms/**/*.html" />
+                 <include name="org/bouncycastle/dvcs/**/*.html" />
                  <include name="org/bouncycastle/eac/**/*.html" />
                  <include name="org/bouncycastle/cert/**/*.html" />
                  <include name="org/bouncycastle/pkcs/**/*.html" />
@@ -791,6 +796,7 @@
         <compile-doc srcDir="${pkix.target.src.dir}" docsDir="${artifacts.docs.dir}/bcpkix">
             <docElements>
                 <package name="org.bouncycastle.cms.*" />
+                <package name="org.bouncycastle.dvcs.*" />
                 <package name="org.bouncycastle.eac.*" />
                 <package name="org.bouncycastle.cert.*" />
                 <package name="org.bouncycastle.pkcs.*" />
@@ -800,6 +806,7 @@
                 <package name="org.bouncycastle.tsp.*" />
                 <group title="TSP Packages" packages="org.bouncycastle.tsp*" />
                 <group title="CMS Packages" packages="org.bouncycastle.cms*" />
+                <group title="DVCS Packages" packages="org.bouncycastle.dvcs*" />
                 <group title="Extended Access Control Packages" packages="org.bouncycastle.eac*" />
                 <group title="Certificate Packages" packages="org.bouncycastle.cert*" />
                 <group title="PKCS Packages" packages="org.bouncycastle.pkcs*" />
