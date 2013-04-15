@@ -1,6 +1,8 @@
 package org.bouncycastle.tsp;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -32,7 +34,10 @@ import org.bouncycastle.asn1.DERSet;
 import org.bouncycastle.asn1.cms.Attribute;
 import org.bouncycastle.asn1.cms.AttributeTable;
 import org.bouncycastle.asn1.ess.ESSCertID;
+import org.bouncycastle.asn1.ess.ESSCertIDv2;
 import org.bouncycastle.asn1.ess.SigningCertificate;
+import org.bouncycastle.asn1.ess.SigningCertificateV2;
+import org.bouncycastle.asn1.oiw.OIWObjectIdentifiers;
 import org.bouncycastle.asn1.pkcs.PKCSObjectIdentifiers;
 import org.bouncycastle.asn1.tsp.Accuracy;
 import org.bouncycastle.asn1.tsp.MessageImprint;
@@ -53,12 +58,39 @@ import org.bouncycastle.cms.SignerInfoGenerator;
 import org.bouncycastle.cms.SimpleAttributeTableGenerator;
 import org.bouncycastle.cms.jcajce.JcaSignerInfoGeneratorBuilder;
 import org.bouncycastle.jce.interfaces.GOST3410PrivateKey;
+import org.bouncycastle.operator.DigestCalculator;
 import org.bouncycastle.operator.OperatorCreationException;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 import org.bouncycastle.operator.jcajce.JcaDigestCalculatorProviderBuilder;
 import org.bouncycastle.util.CollectionStore;
 import org.bouncycastle.util.Store;
 
+/**
+ * Currently the class supports ESSCertID by if a digest calculator based on SHA1 is passed in, otherwise it uses
+ * ESSCertIDv2. In the event you need to pass both types, you will need to override the SignedAttributeGenerator
+ * for the SignerInfoGeneratorBuilder you are using. For the default for ESSCertIDv2 the code will look something
+ * like the following:
+ * <pre>
+ * final ESSCertID essCertid = new ESSCertID(certHashSha1, issuerSerial);
+ * final ESSCertIDv2 essCertidV2 = new ESSCertIDv2(certHashSha256, issuerSerial);
+ *
+ * signerInfoGenBuilder.setSignedAttributeGenerator(new CMSAttributeTableGenerator()
+ * {
+ *     public AttributeTable getAttributes(Map parameters)
+ *         throws CMSAttributeTableGenerationException
+ *     {
+ *         CMSAttributeTableGenerator attrGen = new DefaultSignedAttributeTableGenerator();
+ *
+ *         AttributeTable table = attrGen.getAttributes(parameters);
+ *
+ *         table = table.add(PKCSObjectIdentifiers.id_aa_signingCertificate, new SigningCertificate(essCertid));
+ *         table = table.add(PKCSObjectIdentifiers.id_aa_signingCertificateV2, new SigningCertificateV2(essCertidV2));
+ *
+ *         return table;
+ *     }
+ * });
+ * </pre>
+ */
 public class TimeStampTokenGenerator
 {
     int accuracySeconds = -1;
@@ -85,11 +117,21 @@ public class TimeStampTokenGenerator
     private SignerInfoGenerator signerInfoGen;
 
     /**
+     * Basic Constructor - set up a calculator based on signerInfoGen with a ESSCertID calculated from
+     * the signer's associated certificate using the sha1DigestCalculator. If alternate values are required
+     * for id-aa-signingCertificate they should be added to the signerInfoGen object before it is passed in,
+     * otherwise a standard digest based value will be added.
      *
+     * @param signerInfoGen the generator for the signer we are using.
+     * @param digestCalculator calculator for to use for digest of certificate.
+     * @param tsaPolicy tasPolicy to send.
+     * @throws IllegalArgumentException if calculator is not SHA-1 or there is no associated certificate for the signer,
+     * @throws TSPException if the signer certificate cannot be processed.
      */
     public TimeStampTokenGenerator(
-        final SignerInfoGenerator     signerInfoGen,
-        ASN1ObjectIdentifier          tsaPolicy)
+        final SignerInfoGenerator       signerInfoGen,
+        DigestCalculator                digestCalculator,
+        ASN1ObjectIdentifier            tsaPolicy)
         throws IllegalArgumentException, TSPException
     {
         this.signerInfoGen = signerInfoGen;
@@ -99,28 +141,58 @@ public class TimeStampTokenGenerator
         {
             throw new IllegalArgumentException("SignerInfoGenerator must have an associated certificate");
         }
-        
+
         TSPUtil.validateCertificate(signerInfoGen.getAssociatedCertificate());
 
         try
         {
-            final ESSCertID essCertid = new ESSCertID(MessageDigest.getInstance("SHA-1").digest(signerInfoGen.getAssociatedCertificate().getEncoded()));
+            OutputStream dOut = digestCalculator.getOutputStream();
 
-            this.signerInfoGen = new SignerInfoGenerator(signerInfoGen, new CMSAttributeTableGenerator()
+            dOut.write(signerInfoGen.getAssociatedCertificate().getEncoded());
+
+            dOut.close();
+
+            if (digestCalculator.getAlgorithmIdentifier().getAlgorithm().equals(OIWObjectIdentifiers.idSHA1))
             {
-                public AttributeTable getAttributes(Map parameters)
-                    throws CMSAttributeTableGenerationException
+                final ESSCertID essCertid = new ESSCertID(digestCalculator.getDigest());
+
+                this.signerInfoGen = new SignerInfoGenerator(signerInfoGen, new CMSAttributeTableGenerator()
                 {
-                    AttributeTable table = signerInfoGen.getSignedAttributeTableGenerator().getAttributes(parameters);
+                    public AttributeTable getAttributes(Map parameters)
+                        throws CMSAttributeTableGenerationException
+                    {
+                        AttributeTable table = signerInfoGen.getSignedAttributeTableGenerator().getAttributes(parameters);
 
-                    return table.add(PKCSObjectIdentifiers.id_aa_signingCertificate, new SigningCertificate(essCertid));
-                }
-            }, signerInfoGen.getUnsignedAttributeTableGenerator());
+                        if (table.get(PKCSObjectIdentifiers.id_aa_signingCertificate) == null)
+                        {
+                            return table.add(PKCSObjectIdentifiers.id_aa_signingCertificate, new SigningCertificate(essCertid));
+                        }
 
-        }
-        catch (NoSuchAlgorithmException e)
-        {
-            throw new TSPException("Can't find a SHA-1 implementation.", e);
+                        return table;
+                    }
+                }, signerInfoGen.getUnsignedAttributeTableGenerator());
+            }
+            else
+            {
+                AlgorithmIdentifier digAlgID = new AlgorithmIdentifier(digestCalculator.getAlgorithmIdentifier().getAlgorithm());
+                final ESSCertIDv2   essCertid = new ESSCertIDv2(digAlgID, digestCalculator.getDigest());
+
+                this.signerInfoGen = new SignerInfoGenerator(signerInfoGen, new CMSAttributeTableGenerator()
+                {
+                    public AttributeTable getAttributes(Map parameters)
+                        throws CMSAttributeTableGenerationException
+                    {
+                        AttributeTable table = signerInfoGen.getSignedAttributeTableGenerator().getAttributes(parameters);
+
+                        if (table.get(PKCSObjectIdentifiers.id_aa_signingCertificateV2) == null)
+                        {
+                            return table.add(PKCSObjectIdentifiers.id_aa_signingCertificateV2, new SigningCertificateV2(essCertid));
+                        }
+
+                        return table;
+                    }
+                }, signerInfoGen.getUnsignedAttributeTableGenerator());
+            }
         }
         catch (IOException e)
         {
@@ -129,8 +201,65 @@ public class TimeStampTokenGenerator
     }
 
     /**
+     * Basic Constructor - set up a calculator based on signerInfoGen with a ESSCertID calculated from
+     * the signer's associated certificate using the sha1DigestCalculator.
+     *
+     * @param sha1DigestCalculator calculator for SHA-1 of certificate.
+     * @param signerInfoGen the generator for the signer we are using.
+     * @param tsaPolicy tasPolicy to send.
+     * @throws IllegalArgumentException if calculator is not SHA-1 or there is no associated certificate for the signer,
+     * @throws TSPException if the signer certificate cannot be processed.
+     * @deprecated use constructor taking signerInfoGen first.
+     */
+    public TimeStampTokenGenerator(
+        DigestCalculator sha1DigestCalculator,
+        final SignerInfoGenerator         signerInfoGen,
+        ASN1ObjectIdentifier              tsaPolicy)
+        throws IllegalArgumentException, TSPException
+    {
+        this(signerInfoGen, sha1DigestCalculator, tsaPolicy);
+    }
+
+    /**
      * basic creation - only the default attributes will be included here.
-     * @deprecated use SignerInfoGenerator constructor
+     * @deprecated use SignerInfoGenerator constructor that takes a digest calculator
+     */
+    public TimeStampTokenGenerator(
+        final SignerInfoGenerator     signerInfoGen,
+        ASN1ObjectIdentifier          tsaPolicy)
+        throws IllegalArgumentException, TSPException
+    {
+        this(new DigestCalculator()
+        {
+            private ByteArrayOutputStream bOut = new ByteArrayOutputStream();
+
+            public AlgorithmIdentifier getAlgorithmIdentifier()
+            {
+                return new AlgorithmIdentifier(OIWObjectIdentifiers.idSHA1, DERNull.INSTANCE);
+            }
+
+            public OutputStream getOutputStream()
+            {
+                return bOut;
+            }
+
+            public byte[] getDigest()
+            {
+                try
+                {
+                    return MessageDigest.getInstance("SHA-1").digest(bOut.toByteArray());
+                }
+                catch (NoSuchAlgorithmException e)
+                {
+                    throw new IllegalStateException("cannot find sha-1: "+ e.getMessage());
+                }
+            }
+        }, signerInfoGen, tsaPolicy);
+    }
+
+    /**
+     * basic creation - only the default attributes will be included here.
+     * @deprecated use SignerInfoGenerator constructor that takes a digest calculator.
      */
     public TimeStampTokenGenerator(
         PrivateKey      key,
@@ -144,7 +273,7 @@ public class TimeStampTokenGenerator
 
     /**
      * basic creation - only the default attributes will be included here.
-     * @deprecated use SignerInfoGenerator constructor
+     * @deprecated use SignerInfoGenerator constructor that takes a digest calculator.
      */
     public TimeStampTokenGenerator(
         PrivateKey      key,
@@ -158,7 +287,7 @@ public class TimeStampTokenGenerator
 
     /**
      * create with a signer with extra signed/unsigned attributes.
-     * @deprecated use SignerInfoGenerator constructor
+     * @deprecated use SignerInfoGenerator constructor that takes a digest calculator.
      */
     public TimeStampTokenGenerator(
         PrivateKey      key,
@@ -356,7 +485,7 @@ public class TimeStampTokenGenerator
 
         ASN1ObjectIdentifier digestAlgOID = request.getMessageImprintAlgOID();
 
-        AlgorithmIdentifier algID = new AlgorithmIdentifier(digestAlgOID, new DERNull());
+        AlgorithmIdentifier algID = new AlgorithmIdentifier(digestAlgOID, DERNull.INSTANCE);
         MessageImprint      messageImprint = new MessageImprint(algID, request.getMessageImprintDigest());
 
         Accuracy accuracy = null;
