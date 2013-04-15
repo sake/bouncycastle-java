@@ -34,6 +34,7 @@
                 <exclude name="**/ntru/**/*.java" />
                 <exclude name="**/asymmetric/DSTU*.java" />
                 <exclude name="**/asymmetric/dstu/*.java" />
+		<exclude name="**/provider/config/PKCS12StoreParameter.java" />
             </fileset>
             <fileset dir="test/src">
                 <exclude name="**/ECDSA5Test.java" />
@@ -50,6 +51,9 @@
                 <exclude name="**/crypto/engines/test/AllTests.java" />
                 <exclude name="**/crypto/signers/test/AllTests.java" />
                 <exclude name="**/jce/**/DSTU*.java" />
+                <exclude name="**/pqc/**/EncryptionKeyTest.java" />
+                <exclude name="**/pqc/**/BitStringTest.java" />
+		<exclude name="**/jcajce/provider/test/*.java" />
             </fileset>
             <fileset dir="src" includes="**/*.properties" />
             <fileset dir="test/src" includes="**/*.html" />
