@@ -49,6 +49,11 @@ Release 1.49
 <li>A new interface Memoable has been added for objects that can copy in and out their state. The digest classes now support this. A special
 class NonMemoableDigest has been added which hides the Memoable interface where it should not be available.</li>
 <li>TDEA is now recognised as an alias for DESede.</li>
+<li>A new package org.bouncycastle.crypto.ec has been introduced to the light wieght API with a range of EC based cryptographic operators.</li>
+<li>The OpenPGP API now supports password changing on V3 keys if the appropriate PBEKeyEncryptor is used.</li>
+<li>The OpenPGP API now supports password changing on secret key rings where only the private keys for the subkeys have been exported.</li>
+<li>Support has been added to the lightweight API for RSA-KEM and ECIES-KEM.</li>
+<li>Support has been added for NIST SP 800-38D - GMAC to AES and other 128 bit block size algorithms.</li>
 </ul>
 <h3>2.1.4 Notes</h3>
 <ul>
