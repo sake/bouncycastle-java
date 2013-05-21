@@ -5,49 +5,74 @@ import java.io.IOException;
 
 import org.bouncycastle.crypto.Digest;
 import org.bouncycastle.crypto.Mac;
+import org.bouncycastle.crypto.digests.LongDigest;
 import org.bouncycastle.crypto.macs.HMac;
 import org.bouncycastle.crypto.params.KeyParameter;
 import org.bouncycastle.util.Arrays;
 
 /**
- * A generic TLS MAC implementation, which can be used with any kind of Digest to act as
- * an HMAC.
+ * A generic TLS MAC implementation, acting as an HMAC based on some underlying Digest.
  */
 public class TlsMac
 {
-    protected TlsClientContext context;
-    protected long seqNo;
+
+    protected TlsContext context;
     protected byte[] secret;
     protected Mac mac;
+    protected int digestBlockSize;
+    protected int digestOverhead;
 
     /**
      * Generate a new instance of an TlsMac.
-     * 
+     *
      * @param context the TLS client context
-     * @param digest The digest to use.
-     * @param key_block A byte-array where the key for this mac is located.
-     * @param offset The number of bytes to skip, before the key starts in the buffer.
-     * @param len The length of the key.
+     * @param digest  The digest to use.
+     * @param key     A byte-array where the key for this mac is located.
+     * @param keyOff  The number of bytes to skip, before the key starts in the buffer.
+     * @param len     The length of the key.
      */
-    public TlsMac(TlsClientContext context, Digest digest, byte[] key_block, int offset, int len)
+    public TlsMac(TlsContext context, Digest digest, byte[] key, int keyOff, int keyLen)
     {
         this.context = context;
-        this.seqNo = 0;
 
-        KeyParameter param = new KeyParameter(key_block, offset, len);
+        KeyParameter keyParameter = new KeyParameter(key, keyOff, keyLen);
 
-        this.secret = Arrays.clone(param.getKey());
+        this.secret = Arrays.clone(keyParameter.getKey());
+
+        // TODO This should check the actual algorithm, not rely on the engine type
+        if (digest instanceof LongDigest)
+        {
+            this.digestBlockSize = 128;
+            this.digestOverhead = 16;
+        }
+        else
+        {
+            this.digestBlockSize = 64;
+            this.digestOverhead = 8;
+        }
 
         if (context.getServerVersion().isSSL())
         {
             this.mac = new SSL3Mac(digest);
+
+            // TODO This should check the actual algorithm, not assume based on the digest size
+            if (digest.getDigestSize() == 20)
+            {
+                /*
+                 * NOTE: When SHA-1 is used with the SSL 3.0 MAC, the secret + input pad is not
+                 * digest block-aligned.
+                 */
+                this.digestOverhead = 4;
+            }
         }
         else
         {
             this.mac = new HMac(digest);
+
+            // NOTE: The input pad for HMAC is always a full digest block
         }
 
-        this.mac.init(param);
+        this.mac.init(keyParameter);
     }
 
     /**
@@ -55,23 +80,7 @@ public class TlsMac
      */
     public byte[] getMACSecret()
     {
-	return this.secret;
-    }
-
-    /**
-     * @return the current write sequence number
-     */
-    public long getSequenceNumber()
-    {
-	return this.seqNo;
-    }
-
-    /**
-     * Increment the current write sequence number
-     */
-    public void incSequenceNumber()
-    {
-	this.seqNo++;
+        return this.secret;
     }
 
     /**
@@ -84,24 +93,23 @@ public class TlsMac
 
     /**
      * Calculate the MAC for some given data.
-     * <p/>
-     * TlsMac will keep track of the sequence number internally.
-     * 
-     * @param type The message type of the message.
+     *
+     * @param type    The message type of the message.
      * @param message A byte-buffer containing the message.
-     * @param offset The number of bytes to skip, before the message starts.
-     * @param len The length of the message.
+     * @param offset  The number of bytes to skip, before the message starts.
+     * @param length  The length of the message.
      * @return A new byte-buffer containing the MAC value.
      */
-    public byte[] calculateMac(short type, byte[] message, int offset, int len)
+    public byte[] calculateMac(long seqNo, short type, byte[] message, int offset, int length)
     {
+
         ProtocolVersion serverVersion = context.getServerVersion();
         boolean isSSL = serverVersion.isSSL();
 
         ByteArrayOutputStream bosMac = new ByteArrayOutputStream(isSSL ? 11 : 13);
         try
         {
-            TlsUtils.writeUint64(seqNo++, bosMac);
+            TlsUtils.writeUint64(seqNo, bosMac);
             TlsUtils.writeUint8(type, bosMac);
 
             if (!isSSL)
@@ -109,7 +117,7 @@ public class TlsMac
                 TlsUtils.writeVersion(serverVersion, bosMac);
             }
 
-            TlsUtils.writeUint16(len, bosMac);
+            TlsUtils.writeUint16(length, bosMac);
         }
         catch (IOException e)
         {
@@ -119,40 +127,46 @@ public class TlsMac
 
         byte[] macHeader = bosMac.toByteArray();
         mac.update(macHeader, 0, macHeader.length);
-        mac.update(message, offset, len);
+        mac.update(message, offset, length);
 
         byte[] result = new byte[mac.getMacSize()];
         mac.doFinal(result, 0);
         return result;
     }
 
-    public byte[] calculateMacConstantTime(short type, byte[] message, int offset, int len, int fullLength, byte[] dummyData)
+    public byte[] calculateMacConstantTime(long seqNo, short type, byte[] message, int offset, int length,
+                                           int fullLength, byte[] dummyData)
     {
-        // Actual MAC only calculated on 'len' bytes
-        byte[] result = calculateMac(type, message, offset, len);
 
-        // ...but ensure a constant number of complete digest blocks are processed (per 'fullLength')
-        if (!context.getServerVersion().isSSL())
+        /*
+         * Actual MAC only calculated on 'length' bytes...
+         */
+        byte[] result = calculateMac(seqNo, type, message, offset, length);
+
+        /*
+         * ...but ensure a constant number of complete digest blocks are processed (as many as would
+         * be needed for 'fullLength' bytes of input).
+         */
+        int headerLength = context.getServerVersion().isSSL() ? 11 : 13;
+
+        // How many extra full blocks do we need to calculate?
+        int extra = getDigestBlockCount(headerLength + fullLength) - getDigestBlockCount(headerLength + length);
+
+        while (--extra >= 0)
         {
-            // TODO Currently all TLS digests use a block size of 64, a suffix (length field) of 8, and padding (1+)
-            int db = 64, ds = 8;
-
-            int L1 = 13 + fullLength;
-            int L2 = 13 + len;
-
-            // How many extra full blocks do we need to calculate?
-            int extra = ((L1 + ds) / db) - ((L2 + ds) / db);
-
-            while (--extra >= 0)
-            {
-                mac.update(dummyData, 0, db);
-            }
-    
-            // One more byte in case the implementation is "lazy" about processing blocks
-            mac.update(dummyData[0]);
-            mac.reset();
+            mac.update(dummyData, 0, digestBlockSize);
         }
 
+        // One more byte in case the implementation is "lazy" about processing blocks
+        mac.update(dummyData[0]);
+        mac.reset();
+
         return result;
+    }
+
+    private int getDigestBlockCount(int inputLength)
+    {
+        // NOTE: This calculation assumes a minimum of 1 pad byte
+        return (inputLength + digestOverhead) / digestBlockSize;
     }
 }

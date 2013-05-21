@@ -1,15 +1,21 @@
 package org.bouncycastle.crypto.tls;
 
-import java.security.SecureRandom;
-
 import org.bouncycastle.crypto.CryptoException;
 import org.bouncycastle.crypto.Signer;
 import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 
-interface TlsSigner
+public interface TlsSigner
 {
-    byte[] calculateRawSignature(SecureRandom random, AsymmetricKeyParameter privateKey, byte[] md5andsha1)
+
+    void init(TlsContext context);
+
+    byte[] generateRawSignature(AsymmetricKeyParameter privateKey, byte[] md5AndSha1)
         throws CryptoException;
+
+    boolean verifyRawSignature(byte[] sigBytes, AsymmetricKeyParameter publicKey, byte[] md5AndSha1)
+        throws CryptoException;
+
+    Signer createSigner(AsymmetricKeyParameter privateKey);
 
     Signer createVerifyer(AsymmetricKeyParameter publicKey);
 

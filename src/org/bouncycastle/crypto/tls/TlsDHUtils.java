@@ -1,6 +1,7 @@
 package org.bouncycastle.crypto.tls;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.math.BigInteger;
 import java.security.SecureRandom;
@@ -16,34 +17,45 @@ import org.bouncycastle.util.BigIntegers;
 
 public class TlsDHUtils
 {
+
     static final BigInteger ONE = BigInteger.valueOf(1);
     static final BigInteger TWO = BigInteger.valueOf(2);
 
     public static byte[] calculateDHBasicAgreement(DHPublicKeyParameters publicKey,
-        DHPrivateKeyParameters privateKey)
+                                                   DHPrivateKeyParameters privateKey)
     {
-        DHBasicAgreement dhAgree = new DHBasicAgreement();
-        dhAgree.init(privateKey);
-        BigInteger agreement = dhAgree.calculateAgreement(publicKey);
-        return BigIntegers.asUnsignedByteArray(agreement);
+
+        DHBasicAgreement basicAgreement = new DHBasicAgreement();
+        basicAgreement.init(privateKey);
+        BigInteger agreementValue = basicAgreement.calculateAgreement(publicKey);
+
+        /*
+         * RFC 5246 8.1.2. Leading bytes of Z that contain all zero bits are stripped before it is
+         * used as the pre_master_secret.
+         */
+        return BigIntegers.asUnsignedByteArray(agreementValue);
     }
 
-    public static AsymmetricCipherKeyPair generateDHKeyPair(SecureRandom random, DHParameters dhParams)
+    public static AsymmetricCipherKeyPair generateDHKeyPair(SecureRandom random,
+                                                            DHParameters dhParams)
     {
         DHBasicKeyPairGenerator dhGen = new DHBasicKeyPairGenerator();
         dhGen.init(new DHKeyGenerationParameters(random, dhParams));
         return dhGen.generateKeyPair();
     }
 
-    public static DHPrivateKeyParameters generateEphemeralClientKeyExchange(SecureRandom random, DHParameters dhParams, OutputStream os)
+    public static DHPrivateKeyParameters generateEphemeralClientKeyExchange(SecureRandom random,
+                                                                            DHParameters dhParams, OutputStream output)
         throws IOException
     {
+
         AsymmetricCipherKeyPair dhAgreeClientKeyPair = generateDHKeyPair(random, dhParams);
-        DHPrivateKeyParameters dhAgreeClientPrivateKey = (DHPrivateKeyParameters)dhAgreeClientKeyPair.getPrivate();
+        DHPrivateKeyParameters dhAgreeClientPrivateKey = (DHPrivateKeyParameters)dhAgreeClientKeyPair
+            .getPrivate();
 
         BigInteger Yc = ((DHPublicKeyParameters)dhAgreeClientKeyPair.getPublic()).getY();
         byte[] keData = BigIntegers.asUnsignedByteArray(Yc);
-        TlsUtils.writeOpaque16(keData, os);
+        TlsUtils.writeOpaque16(keData, output);
 
         return dhAgreeClientPrivateKey;
     }
@@ -72,5 +84,17 @@ public class TlsDHUtils
         // TODO See RFC 2631 for more discussion of Diffie-Hellman validation
 
         return key;
+    }
+
+    public static BigInteger readDHParameter(InputStream input)
+        throws IOException
+    {
+        return new BigInteger(1, TlsUtils.readOpaque16(input));
+    }
+
+    public static void writeDHParameter(BigInteger x, OutputStream output)
+        throws IOException
+    {
+        TlsUtils.writeOpaque16(BigIntegers.asUnsignedByteArray(x), output);
     }
 }

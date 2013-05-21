@@ -5,6 +5,7 @@ package org.bouncycastle.crypto.tls;
  */
 public class CipherSuite
 {
+
     public static final int TLS_NULL_WITH_NULL_NULL = 0x0000;
     public static final int TLS_RSA_WITH_NULL_MD5 = 0x0001;
     public static final int TLS_RSA_WITH_NULL_SHA = 0x0002;
@@ -35,6 +36,11 @@ public class CipherSuite
     public static final int TLS_DH_anon_WITH_3DES_EDE_CBC_SHA = 0x001B;
 
     /*
+     * Note: The cipher suite values { 0x00, 0x1C } and { 0x00, 0x1D } are reserved to avoid
+     * collision with Fortezza-based cipher suites in SSL 3.
+     */
+
+    /*
      * RFC 3268
      */
     public static final int TLS_RSA_WITH_AES_128_CBC_SHA = 0x002F;
@@ -49,6 +55,32 @@ public class CipherSuite
     public static final int TLS_DHE_DSS_WITH_AES_256_CBC_SHA = 0x0038;
     public static final int TLS_DHE_RSA_WITH_AES_256_CBC_SHA = 0x0039;
     public static final int TLS_DH_anon_WITH_AES_256_CBC_SHA = 0x003A;
+
+    /*
+     * RFC 4132
+     */
+    public static final int TLS_RSA_WITH_CAMELLIA_128_CBC_SHA = 0x0041;
+    public static final int TLS_DH_DSS_WITH_CAMELLIA_128_CBC_SHA = 0x0042;
+    public static final int TLS_DH_RSA_WITH_CAMELLIA_128_CBC_SHA = 0x0043;
+    public static final int TLS_DHE_DSS_WITH_CAMELLIA_128_CBC_SHA = 0x0044;
+    public static final int TLS_DHE_RSA_WITH_CAMELLIA_128_CBC_SHA = 0x0045;
+    public static final int TLS_DH_anon_WITH_CAMELLIA_128_CBC_SHA = 0x0046;
+    public static final int TLS_RSA_WITH_CAMELLIA_256_CBC_SHA = 0x0084;
+    public static final int TLS_DH_DSS_WITH_CAMELLIA_256_CBC_SHA = 0x0085;
+    public static final int TLS_DH_RSA_WITH_CAMELLIA_256_CBC_SHA = 0x0086;
+    public static final int TLS_DHE_DSS_WITH_CAMELLIA_256_CBC_SHA = 0x0087;
+    public static final int TLS_DHE_RSA_WITH_CAMELLIA_256_CBC_SHA = 0x0088;
+    public static final int TLS_DH_anon_WITH_CAMELLIA_256_CBC_SHA = 0x0089;
+
+    /*
+     * RFC 4162
+     */
+    public static final int TLS_RSA_WITH_SEED_CBC_SHA = 0x0096;
+    public static final int TLS_DH_DSS_WITH_SEED_CBC_SHA = 0x0097;
+    public static final int TLS_DH_RSA_WITH_SEED_CBC_SHA = 0x0098;
+    public static final int TLS_DHE_DSS_WITH_SEED_CBC_SHA = 0x0099;
+    public static final int TLS_DHE_RSA_WITH_SEED_CBC_SHA = 0x009A;
+    public static final int TLS_DH_anon_WITH_SEED_CBC_SHA = 0x009B;
 
     /*
      * RFC 4279
@@ -96,6 +128,13 @@ public class CipherSuite
     public static final int TLS_ECDH_anon_WITH_AES_256_CBC_SHA = 0xC019;
 
     /*
+     * RFC 4785
+     */
+    public static final int TLS_PSK_WITH_NULL_SHA = 0x002C;
+    public static final int TLS_DHE_PSK_WITH_NULL_SHA = 0x002D;
+    public static final int TLS_RSA_PSK_WITH_NULL_SHA = 0x002E;
+
+    /*
      * RFC 5054
      */
     public static final int TLS_SRP_SHA_WITH_3DES_EDE_CBC_SHA = 0xC01A;
@@ -107,6 +146,39 @@ public class CipherSuite
     public static final int TLS_SRP_SHA_WITH_AES_256_CBC_SHA = 0xC020;
     public static final int TLS_SRP_SHA_RSA_WITH_AES_256_CBC_SHA = 0xC021;
     public static final int TLS_SRP_SHA_DSS_WITH_AES_256_CBC_SHA = 0xC022;
+
+    /*
+     * RFC 5246
+     */
+    public static final int TLS_RSA_WITH_NULL_SHA256 = 0x003B;
+    public static final int TLS_RSA_WITH_AES_128_CBC_SHA256 = 0x003C;
+    public static final int TLS_RSA_WITH_AES_256_CBC_SHA256 = 0x003D;
+    public static final int TLS_DH_DSS_WITH_AES_128_CBC_SHA256 = 0x003E;
+    public static final int TLS_DH_RSA_WITH_AES_128_CBC_SHA256 = 0x003F;
+    public static final int TLS_DHE_DSS_WITH_AES_128_CBC_SHA256 = 0x0040;
+    public static final int TLS_DHE_RSA_WITH_AES_128_CBC_SHA256 = 0x0067;
+    public static final int TLS_DH_DSS_WITH_AES_256_CBC_SHA256 = 0x0068;
+    public static final int TLS_DH_RSA_WITH_AES_256_CBC_SHA256 = 0x0069;
+    public static final int TLS_DHE_DSS_WITH_AES_256_CBC_SHA256 = 0x006A;
+    public static final int TLS_DHE_RSA_WITH_AES_256_CBC_SHA256 = 0x006B;
+    public static final int TLS_DH_anon_WITH_AES_128_CBC_SHA256 = 0x006C;
+    public static final int TLS_DH_anon_WITH_AES_256_CBC_SHA256 = 0x006D;
+
+    /*
+     * RFC 5288
+     */
+    public static final int TLS_RSA_WITH_AES_128_GCM_SHA256 = 0x009C;
+    public static final int TLS_RSA_WITH_AES_256_GCM_SHA384 = 0x009D;
+    public static final int TLS_DHE_RSA_WITH_AES_128_GCM_SHA256 = 0x009E;
+    public static final int TLS_DHE_RSA_WITH_AES_256_GCM_SHA384 = 0x009F;
+    public static final int TLS_DH_RSA_WITH_AES_128_GCM_SHA256 = 0x00A0;
+    public static final int TLS_DH_RSA_WITH_AES_256_GCM_SHA384 = 0x00A1;
+    public static final int TLS_DHE_DSS_WITH_AES_128_GCM_SHA256 = 0x00A2;
+    public static final int TLS_DHE_DSS_WITH_AES_256_GCM_SHA384 = 0x00A3;
+    public static final int TLS_DH_DSS_WITH_AES_128_GCM_SHA256 = 0x00A4;
+    public static final int TLS_DH_DSS_WITH_AES_256_GCM_SHA384 = 0x00A5;
+    public static final int TLS_DH_anon_WITH_AES_128_GCM_SHA256 = 0x00A6;
+    public static final int TLS_DH_anon_WITH_AES_256_GCM_SHA384 = 0x00A7;
 
     /*
      * RFC 5289

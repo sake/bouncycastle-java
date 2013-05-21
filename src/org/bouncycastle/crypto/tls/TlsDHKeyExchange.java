@@ -1,9 +1,9 @@
 package org.bouncycastle.crypto.tls;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
 import java.math.BigInteger;
+import java.util.Vector;
 
 import org.bouncycastle.asn1.x509.KeyUsage;
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
@@ -15,54 +15,77 @@ import org.bouncycastle.crypto.params.DHPublicKeyParameters;
 import org.bouncycastle.crypto.util.PublicKeyFactory;
 
 /**
- * TLS 1.0 DH key exchange.
+ * TLS 1.0/1.1 DH key exchange.
  */
-class TlsDHKeyExchange implements TlsKeyExchange
+public class TlsDHKeyExchange
+    extends AbstractTlsKeyExchange
 {
+
     protected static final BigInteger ONE = BigInteger.valueOf(1);
     protected static final BigInteger TWO = BigInteger.valueOf(2);
 
-    protected TlsClientContext context;
-    protected int keyExchange;
     protected TlsSigner tlsSigner;
+    protected DHParameters dhParameters;
 
-    protected AsymmetricKeyParameter serverPublicKey = null;
-    protected DHPublicKeyParameters dhAgreeServerPublicKey = null;
+    protected AsymmetricKeyParameter serverPublicKey;
+    protected DHPublicKeyParameters dhAgreeServerPublicKey;
     protected TlsAgreementCredentials agreementCredentials;
-    protected DHPrivateKeyParameters dhAgreeClientPrivateKey = null;
+    protected DHPrivateKeyParameters dhAgreeClientPrivateKey;
 
-    TlsDHKeyExchange(TlsClientContext context, int keyExchange)
+    protected DHPublicKeyParameters dhAgreeClientPublicKey;
+
+    public TlsDHKeyExchange(int keyExchange, Vector supportedSignatureAlgorithms, DHParameters dhParameters)
     {
+
+        super(keyExchange, supportedSignatureAlgorithms);
+
         switch (keyExchange)
         {
-            case KeyExchangeAlgorithm.DH_RSA:
-            case KeyExchangeAlgorithm.DH_DSS:
-                this.tlsSigner = null;
-                break;
-            case KeyExchangeAlgorithm.DHE_RSA:
-                this.tlsSigner = new TlsRSASigner();
-                break;
-            case KeyExchangeAlgorithm.DHE_DSS:
-                this.tlsSigner = new TlsDSSSigner();
-                break;
-            default:
-                throw new IllegalArgumentException("unsupported key exchange algorithm");
+        case KeyExchangeAlgorithm.DH_RSA:
+        case KeyExchangeAlgorithm.DH_DSS:
+            this.tlsSigner = null;
+            break;
+        case KeyExchangeAlgorithm.DHE_RSA:
+            this.tlsSigner = new TlsRSASigner();
+            break;
+        case KeyExchangeAlgorithm.DHE_DSS:
+            this.tlsSigner = new TlsDSSSigner();
+            break;
+        default:
+            throw new IllegalArgumentException("unsupported key exchange algorithm");
         }
 
-        this.context = context;
-        this.keyExchange = keyExchange;
+        this.dhParameters = dhParameters;
     }
 
-    public void skipServerCertificate() throws IOException
+    public void init(TlsContext context)
+    {
+        super.init(context);
+
+        if (this.tlsSigner != null)
+        {
+            this.tlsSigner.init(context);
+        }
+    }
+
+    public void skipServerCredentials()
+        throws IOException
     {
         throw new TlsFatalAlert(AlertDescription.unexpected_message);
     }
 
-    public void processServerCertificate(Certificate serverCertificate) throws IOException
+    public void processServerCertificate(Certificate serverCertificate)
+        throws IOException
     {
-        org.bouncycastle.asn1.x509.Certificate x509Cert = serverCertificate.certs[0];
-        SubjectPublicKeyInfo keyInfo = x509Cert.getSubjectPublicKeyInfo();
 
+        if (serverCertificate.isEmpty())
+        {
+            throw new TlsFatalAlert(AlertDescription.bad_certificate);
+        }
+
+        org.bouncycastle.asn1.x509.Certificate x509Cert = serverCertificate.getCertificateAt(0);
+
+        SubjectPublicKeyInfo keyInfo = x509Cert.getSubjectPublicKeyInfo();
         try
         {
             this.serverPublicKey = PublicKeyFactory.createKey(keyInfo);
@@ -95,23 +118,20 @@ class TlsDHKeyExchange implements TlsKeyExchange
             TlsUtils.validateKeyUsage(x509Cert, KeyUsage.digitalSignature);
         }
 
-        // TODO 
-        /*
-         * Perform various checks per RFC2246 7.4.2: "Unless otherwise specified, the
-         * signing algorithm for the certificate must be the same as the algorithm for the
-         * certificate key."
-         */
+        super.processServerCertificate(serverCertificate);
     }
 
-    public void skipServerKeyExchange() throws IOException
+    public boolean requiresServerKeyExchange()
     {
-        // OK
-    }
-
-    public void processServerKeyExchange(InputStream is)
-        throws IOException
-    {
-        throw new TlsFatalAlert(AlertDescription.unexpected_message);
+        switch (keyExchange)
+        {
+        case KeyExchangeAlgorithm.DHE_DSS:
+        case KeyExchangeAlgorithm.DHE_RSA:
+        case KeyExchangeAlgorithm.DH_anon:
+            return true;
+        default:
+            return false;
+        }
     }
 
     public void validateCertificateRequest(CertificateRequest certificateRequest)
@@ -122,24 +142,20 @@ class TlsDHKeyExchange implements TlsKeyExchange
         {
             switch (types[i])
             {
-                case ClientCertificateType.rsa_sign:
-                case ClientCertificateType.dss_sign:
-                case ClientCertificateType.rsa_fixed_dh:
-                case ClientCertificateType.dss_fixed_dh:
-                case ClientCertificateType.ecdsa_sign:
-                    break;
-                default:
-                    throw new TlsFatalAlert(AlertDescription.illegal_parameter);
+            case ClientCertificateType.rsa_sign:
+            case ClientCertificateType.dss_sign:
+            case ClientCertificateType.rsa_fixed_dh:
+            case ClientCertificateType.dss_fixed_dh:
+            case ClientCertificateType.ecdsa_sign:
+                break;
+            default:
+                throw new TlsFatalAlert(AlertDescription.illegal_parameter);
             }
         }
     }
 
-    public void skipClientCredentials() throws IOException
-    {
-        this.agreementCredentials = null;
-    }
-
-    public void processClientCredentials(TlsCredentials clientCredentials) throws IOException
+    public void processClientCredentials(TlsCredentials clientCredentials)
+        throws IOException
     {
         if (clientCredentials instanceof TlsAgreementCredentials)
         {
@@ -157,20 +173,23 @@ class TlsDHKeyExchange implements TlsKeyExchange
         }
     }
 
-    public void generateClientKeyExchange(OutputStream os) throws IOException
+    public void generateClientKeyExchange(OutputStream output)
+        throws IOException
     {
         /*
-         * RFC 2246 7.4.7.2 If the client certificate already contains a suitable
-         * Diffie-Hellman key, then Yc is implicit and does not need to be sent again. In
-         * this case, the Client Key Exchange message will be sent, but will be empty.
+         * RFC 2246 7.4.7.2 If the client certificate already contains a suitable Diffie-Hellman
+         * key, then Yc is implicit and does not need to be sent again. In this case, the Client Key
+         * Exchange message will be sent, but will be empty.
          */
         if (agreementCredentials == null)
         {
-            generateEphemeralClientKeyExchange(dhAgreeServerPublicKey.getParameters(), os);
+            this.dhAgreeClientPrivateKey = TlsDHUtils.generateEphemeralClientKeyExchange(context.getSecureRandom(),
+                dhAgreeServerPublicKey.getParameters(), output);
         }
     }
 
-    public byte[] generatePremasterSecret() throws IOException
+    public byte[] generatePremasterSecret()
+        throws IOException
     {
         if (agreementCredentials != null)
         {
@@ -185,8 +204,7 @@ class TlsDHKeyExchange implements TlsKeyExchange
         return a.getP().equals(b.getP()) && a.getG().equals(b.getG());
     }
 
-    protected byte[] calculateDHBasicAgreement(DHPublicKeyParameters publicKey,
-        DHPrivateKeyParameters privateKey)
+    protected byte[] calculateDHBasicAgreement(DHPublicKeyParameters publicKey, DHPrivateKeyParameters privateKey)
     {
         return TlsDHUtils.calculateDHBasicAgreement(publicKey, privateKey);
     }
@@ -194,12 +212,6 @@ class TlsDHKeyExchange implements TlsKeyExchange
     protected AsymmetricCipherKeyPair generateDHKeyPair(DHParameters dhParams)
     {
         return TlsDHUtils.generateDHKeyPair(context.getSecureRandom(), dhParams);
-    }
-
-    protected void generateEphemeralClientKeyExchange(DHParameters dhParams, OutputStream os)
-        throws IOException
-    {
-        this.dhAgreeClientPrivateKey = TlsDHUtils.generateEphemeralClientKeyExchange(context.getSecureRandom(), dhParams, os);
     }
 
     protected DHPublicKeyParameters validateDHPublicKey(DHPublicKeyParameters key)

@@ -1,11 +1,14 @@
 package org.bouncycastle.crypto.tls;
 
+/**
+ * RFC 2246
+ * <p/>
+ * Note that the values here are implementation-specific and arbitrary. It is recommended not to
+ * depend on the particular values (e.g. serialization).
+ */
 public class EncryptionAlgorithm
 {
-    /*
-     * Note that the values here are implementation-specific and arbitrary.
-     * It is recommended not to depend on the particular values (e.g. serialization).
-     */
+
     public static final int NULL = 0;
     public static final int RC4_40 = 1;
     public static final int RC4_128 = 2;
@@ -20,6 +23,17 @@ public class EncryptionAlgorithm
      */
     public static final int AES_128_CBC = 8;
     public static final int AES_256_CBC = 9;
+
+    /*
+     * RFC 4132
+     */
+    public static final int CAMELLIA_128_CBC = 12;
+    public static final int CAMELLIA_256_CBC = 13;
+
+    /*
+     * RFC 4162
+     */
+    public static final int SEED_CBC = 14;
 
     /*
      * RFC 5289

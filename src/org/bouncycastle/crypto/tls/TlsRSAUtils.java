@@ -11,8 +11,9 @@ import org.bouncycastle.crypto.params.RSAKeyParameters;
 
 public class TlsRSAUtils
 {
-    public static byte[] generateEncryptedPreMasterSecret(TlsClientContext context,
-        RSAKeyParameters rsaServerPublicKey, OutputStream os) throws IOException
+    public static byte[] generateEncryptedPreMasterSecret(TlsContext context, RSAKeyParameters rsaServerPublicKey,
+                                                          OutputStream output)
+        throws IOException
     {
         /*
          * Choose a PremasterSecret and send it encrypted to the server
@@ -26,15 +27,16 @@ public class TlsRSAUtils
 
         try
         {
-            byte[] keData = encoding.processBlock(premasterSecret, 0, premasterSecret.length);
+            byte[] encryptedPreMasterSecret = encoding.processBlock(premasterSecret, 0, premasterSecret.length);
 
             if (context.getServerVersion().isSSL())
             {
-                os.write(keData);
+                // TODO Do any SSLv3 servers actually expect the length?
+                output.write(encryptedPreMasterSecret);
             }
             else
             {
-                TlsUtils.writeOpaque16(keData, os);
+                TlsUtils.writeOpaque16(encryptedPreMasterSecret, output);
             }
         }
         catch (InvalidCipherTextException e)

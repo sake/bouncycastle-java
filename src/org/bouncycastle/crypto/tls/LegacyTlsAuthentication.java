@@ -4,10 +4,11 @@ import java.io.IOException;
 
 /**
  * A temporary class to wrap old CertificateVerifyer stuff for new TlsAuthentication
- * 
+ *
  * @deprecated
  */
-public class LegacyTlsAuthentication implements TlsAuthentication
+public class LegacyTlsAuthentication
+    extends ServerOnlyTlsAuthentication
 {
     protected CertificateVerifyer verifyer;
 
@@ -16,17 +17,12 @@ public class LegacyTlsAuthentication implements TlsAuthentication
         this.verifyer = verifyer;
     }
 
-    public void notifyServerCertificate(Certificate serverCertificate) throws IOException
+    public void notifyServerCertificate(Certificate serverCertificate)
+        throws IOException
     {
-        if (!this.verifyer.isValid(serverCertificate.getCerts()))
+        if (!this.verifyer.isValid(serverCertificate.getCertificateList()))
         {
             throw new TlsFatalAlert(AlertDescription.user_canceled);
         }
-    }
-
-    public TlsCredentials getClientCredentials(CertificateRequest certificateRequest)
-        throws IOException
-    {
-        return null;
     }
 }

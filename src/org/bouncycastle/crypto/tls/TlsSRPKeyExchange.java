@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.math.BigInteger;
+import java.util.Vector;
 
 import org.bouncycastle.asn1.x509.KeyUsage;
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
@@ -18,12 +19,12 @@ import org.bouncycastle.crypto.util.PublicKeyFactory;
 import org.bouncycastle.util.BigIntegers;
 
 /**
- * TLS 1.1 SRP key exchange.
+ * TLS 1.1 SRP key exchange (RFC 5054).
  */
-class TlsSRPKeyExchange implements TlsKeyExchange
+public class TlsSRPKeyExchange
+    extends AbstractTlsKeyExchange
 {
-    protected TlsClientContext context;
-    protected int keyExchange;
+
     protected TlsSigner tlsSigner;
     protected byte[] identity;
     protected byte[] password;
@@ -34,30 +35,43 @@ class TlsSRPKeyExchange implements TlsKeyExchange
     protected BigInteger B = null;
     protected SRP6Client srpClient = new SRP6Client();
 
-    TlsSRPKeyExchange(TlsClientContext context, int keyExchange, byte[] identity, byte[] password)
+    public TlsSRPKeyExchange(int keyExchange, Vector supportedSignatureAlgorithms, byte[] identity, byte[] password)
     {
+
+        super(keyExchange, supportedSignatureAlgorithms);
+
         switch (keyExchange)
         {
-            case KeyExchangeAlgorithm.SRP:
-                this.tlsSigner = null;
-                break;
-            case KeyExchangeAlgorithm.SRP_RSA:
-                this.tlsSigner = new TlsRSASigner();
-                break;
-            case KeyExchangeAlgorithm.SRP_DSS:
-                this.tlsSigner = new TlsDSSSigner();
-                break;
-            default:
-                throw new IllegalArgumentException("unsupported key exchange algorithm");
+        case KeyExchangeAlgorithm.SRP:
+            this.tlsSigner = null;
+            break;
+        case KeyExchangeAlgorithm.SRP_RSA:
+            this.tlsSigner = new TlsRSASigner();
+            break;
+        case KeyExchangeAlgorithm.SRP_DSS:
+            this.tlsSigner = new TlsDSSSigner();
+            break;
+        default:
+            throw new IllegalArgumentException("unsupported key exchange algorithm");
         }
 
-        this.context = context;
         this.keyExchange = keyExchange;
         this.identity = identity;
         this.password = password;
     }
 
-    public void skipServerCertificate() throws IOException
+    public void init(TlsContext context)
+    {
+        super.init(context);
+
+        if (this.tlsSigner != null)
+        {
+            this.tlsSigner.init(context);
+        }
+    }
+
+    public void skipServerCredentials()
+        throws IOException
     {
         if (tlsSigner != null)
         {
@@ -65,16 +79,22 @@ class TlsSRPKeyExchange implements TlsKeyExchange
         }
     }
 
-    public void processServerCertificate(Certificate serverCertificate) throws IOException
+    public void processServerCertificate(Certificate serverCertificate)
+        throws IOException
     {
+
         if (tlsSigner == null)
         {
             throw new TlsFatalAlert(AlertDescription.unexpected_message);
         }
+        if (serverCertificate.isEmpty())
+        {
+            throw new TlsFatalAlert(AlertDescription.bad_certificate);
+        }
 
-        org.bouncycastle.asn1.x509.Certificate x509Cert = serverCertificate.certs[0];
+        org.bouncycastle.asn1.x509.Certificate x509Cert = serverCertificate.getCertificateAt(0);
+
         SubjectPublicKeyInfo keyInfo = x509Cert.getSubjectPublicKeyInfo();
-
         try
         {
             this.serverPublicKey = PublicKeyFactory.createKey(keyInfo);
@@ -90,31 +110,28 @@ class TlsSRPKeyExchange implements TlsKeyExchange
         }
 
         TlsUtils.validateKeyUsage(x509Cert, KeyUsage.digitalSignature);
-        
-        // TODO 
-        /*
-         * Perform various checks per RFC2246 7.4.2: "Unless otherwise specified, the
-         * signing algorithm for the certificate must be the same as the algorithm for the
-         * certificate key."
-         */
+
+        super.processServerCertificate(serverCertificate);
     }
 
-    public void skipServerKeyExchange() throws IOException
+    public boolean requiresServerKeyExchange()
     {
-        throw new TlsFatalAlert(AlertDescription.unexpected_message);
+        return true;
     }
 
-    public void processServerKeyExchange(InputStream is) throws IOException
+    public void processServerKeyExchange(InputStream input)
+        throws IOException
     {
+
         SecurityParameters securityParameters = context.getSecurityParameters();
 
-        InputStream sigIn = is;
+        InputStream sigIn = input;
         Signer signer = null;
 
         if (tlsSigner != null)
         {
-            signer = initSigner(tlsSigner, securityParameters);
-            sigIn = new SignerInputStream(is, signer);
+            signer = initVerifyer(tlsSigner, securityParameters);
+            sigIn = new SignerInputStream(input, signer);
         }
 
         byte[] NBytes = TlsUtils.readOpaque16(sigIn);
@@ -124,11 +141,11 @@ class TlsSRPKeyExchange implements TlsKeyExchange
 
         if (signer != null)
         {
-            byte[] sigByte = TlsUtils.readOpaque16(is);
+            byte[] sigByte = TlsUtils.readOpaque16(input);
 
             if (!signer.verifySignature(sigByte))
             {
-                throw new TlsFatalAlert(AlertDescription.bad_certificate);
+                throw new TlsFatalAlert(AlertDescription.decrypt_error);
             }
         }
 
@@ -136,13 +153,13 @@ class TlsSRPKeyExchange implements TlsKeyExchange
         BigInteger g = new BigInteger(1, gBytes);
 
         // TODO Validate group parameters (see RFC 5054)
-//        handler.failWithError(AlertLevel.fatal, AlertDescription.insufficient_security);
+        // handler.failWithError(AlertLevel.fatal, AlertDescription.insufficient_security);
 
         this.s = sBytes;
 
         /*
-         * RFC 5054 2.5.3: The client MUST abort the handshake with an "illegal_parameter"
-         * alert if B % N = 0.
+         * RFC 5054 2.5.3: The client MUST abort the handshake with an "illegal_parameter" alert if
+         * B % N = 0.
          */
         try
         {
@@ -162,24 +179,22 @@ class TlsSRPKeyExchange implements TlsKeyExchange
         throw new TlsFatalAlert(AlertDescription.unexpected_message);
     }
 
-    public void skipClientCredentials() throws IOException
-    {
-        // OK
-    }
-
-    public void processClientCredentials(TlsCredentials clientCredentials) throws IOException
+    public void processClientCredentials(TlsCredentials clientCredentials)
+        throws IOException
     {
         throw new TlsFatalAlert(AlertDescription.internal_error);
     }
 
-    public void generateClientKeyExchange(OutputStream os) throws IOException
+    public void generateClientKeyExchange(OutputStream output)
+        throws IOException
     {
-        byte[] keData = BigIntegers.asUnsignedByteArray(srpClient.generateClientCredentials(s,
-            this.identity, this.password));
-        TlsUtils.writeOpaque16(keData, os);
+        byte[] keData = BigIntegers.asUnsignedByteArray(srpClient.generateClientCredentials(s, this.identity,
+            this.password));
+        TlsUtils.writeOpaque16(keData, output);
     }
 
-    public byte[] generatePremasterSecret() throws IOException
+    public byte[] generatePremasterSecret()
+        throws IOException
     {
         try
         {
@@ -192,7 +207,7 @@ class TlsSRPKeyExchange implements TlsKeyExchange
         }
     }
 
-    protected Signer initSigner(TlsSigner tlsSigner, SecurityParameters securityParameters)
+    protected Signer initVerifyer(TlsSigner tlsSigner, SecurityParameters securityParameters)
     {
         Signer signer = tlsSigner.createVerifyer(this.serverPublicKey);
         signer.update(securityParameters.clientRandom, 0, securityParameters.clientRandom.length);
