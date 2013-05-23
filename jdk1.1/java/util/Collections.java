@@ -289,37 +289,38 @@ public class Collections
     }
 
     static class UnmodifiableMap
-        extends UnmodifiableCollection
         implements Map
     {
+        private Map c;
+
         UnmodifiableMap(Map map)
         {
-            super(map);
+            this.c = map;
         }
 
         public int size()
         {
-            return ((Map)c).size();
+            return c.size();
         }
 
         public boolean isEmpty()
         {
-            return ((Map)c).isEmpty();
+            return c.isEmpty();
         }
 
         public boolean containsKey(Object o)
         {
-            return ((Map)c).containsKey(o);
+            return c.containsKey(o);
         }
 
         public boolean containsValue(Object o)
         {
-            return ((Map)c).containsValue(o);
+            return c.containsValue(o);
         }
 
         public Object get(Object o)
         {
-            return ((Map)c).get(o);
+            return c.get(o);
         }
 
         public Object put(Object o, Object o2)
@@ -344,17 +345,32 @@ public class Collections
 
         public Set keySet()
         {
-            return Collections.unmodifiableSet(((Map)c).keySet());
+            return Collections.unmodifiableSet(c.keySet());
         }
 
         public Collection values()
         {
-            return new UnmodifiableCollection(((Map)c).values());
+            return new UnmodifiableCollection(c.values());
         }
 
         public Set entrySet()
         {
-            return Collections.unmodifiableSet(((Map)c).entrySet());
+            return Collections.unmodifiableSet(c.entrySet());
+        }
+
+        public boolean equals(Object o)
+        {
+            return c.equals(o);
+        }
+
+        public int hashCode()
+        {
+            return c.hashCode();
+        }
+
+        public String toString()
+        {
+            return c.toString();
         }
     }
 }
