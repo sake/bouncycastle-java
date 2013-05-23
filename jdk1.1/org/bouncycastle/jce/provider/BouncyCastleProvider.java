@@ -1,9 +1,7 @@
 package org.bouncycastle.jce.provider;
 
 import java.io.IOException;
-import java.security.AccessController;
 import java.security.PrivateKey;
-import java.security.PrivilegedAction;
 import java.security.Provider;
 import java.security.PublicKey;
 import java.util.HashMap;
