@@ -292,7 +292,7 @@ public class Collections
         extends UnmodifiableCollection
         implements Map
     {
-        UmodifiableMap(Map map)
+        UnmodifiableMap(Map map)
         {
             super(map);
         }
@@ -352,7 +352,7 @@ public class Collections
             return new UnmodifiableCollection(((Map)c).values());
         }
 
-        public Set<Entry> entrySet()
+        public Set entrySet()
         {
             return Collections.unmodifiableSet(((Map)c).entrySet());
         }
