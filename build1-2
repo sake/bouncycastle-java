@@ -27,6 +27,8 @@ then
      | (cd lcrypto-jdk12-$base/src && tar xf -)
     (cd jdk1.3 && tar cf - org/bouncycastle/asn1) \
      | (cd lcrypto-jdk12-$base/src && tar xf -)
+    (cd jdk1.3 && tar cf - org/bouncycastle/crypto) \
+     | (cd lcrypto-jdk12-$base/src && tar xf -)
     (cd test && tar cf - src/org/bouncycastle/crypto src/org/bouncycastle/util src/org/bouncycastle/asn1) \
      | (cd lcrypto-jdk12-$base && tar xf -)
     (
@@ -133,8 +135,11 @@ then
     cd jce-jdk12-$base; mkdir classes; mkdir docs;
 
     rm -rf src/org/bouncycastle/crypto/test/ntru
-    rm -rf src/org/bouncycastle/math/ntru
-    rm -rf src/org/bouncycastle/crypto/*/NTRU*
+    rm -rf src/org/bouncycastle/pqc/math/ntru
+    rm -rf src/org/bouncycastle/pqc/crypto/ntru
+    rm -rf src/org/bouncycastle/pqc/crypto/*/NTRU*
+    rm -rf src/org/bouncycastle/pqc/crypto/*/EncryptionKey*
+    rm -rf src/org/bouncycastle/pqc/crypto/*/BitStringT*
     rm -rf src/org/bouncycastle/crypto/*/test
     rm -rf src/org/bouncycastle/crypto/*/IndexGenerator*
     rm -rf src/org/bouncycastle/util/utiltest
@@ -179,9 +184,12 @@ then
     rm -rf src/org/bouncycastle/jce/provider/test/nist
     rm -rf src/org/bouncycastle/jce/provider/test/rsa3
     rm -rf src/org/bouncycastle/jce/provider/test/DSTU4145Test.java
+    rm -rf src/org/bouncycastle/jce/provider/test/JceTestUtil.java
     rm -rf src/org/bouncycastle/x509/PKIXAttrCert*.java
     rm -rf src/org/bouncycastle/jce/provider/RFC3281*.java
     rm -rf src/org/bouncycastle/jce/provider/JDKPKCS12StoreParameter.java
+    rm -rf src/org/bouncycastle/jcajce/provider/config/PKCS12StoreParameter.java
+    rm -rf src/org/bouncycastle/jcajce/provider/test/PrivateConstructorTest.java
     find src -name AllTests.java -exec rm {} \;
     rm src/org/bouncycastle/asn1/test/GetInstanceTest.java
     rm src/org/bouncycastle/asn1/test/ASN1SequenceParserTest.java
@@ -197,6 +205,7 @@ then
     rm -rf src/org/bouncycastle/mozilla
     rm -rf src/org/bouncycastle/jcajce/provider/asymmetric/dstu
     rm -rf src/org/bouncycastle/jcajce/provider/asymmetric/DSTU*.java
+    rm -rf src/org/bouncycastle/jcajce/provider/asymmetric/util/EC5*.java
     rm -rf src/org/bouncycastle/pqc/jcajce/provider/test
 
     (2>&1 javadoc -windowtitle "$WINDOWTITLE" -doctitle "$DOCTITLE" \
@@ -259,9 +268,9 @@ then
         org.bouncycastle.jce.spec \
         org.bouncycastle.jce.examples \
         org.bouncycastle.jce.provider \
-        org.bouncycastle.jce.provider.asymmetric \
-        org.bouncycastle.jce.provider.asymmetric.ec \
-        org.bouncycastle.jce.provider.symmetric \
+        org.bouncycastle.jcajce.provider.asymmetric \
+        org.bouncycastle.jcajce.provider.asymmetric.ec \
+        org.bouncycastle.jcajce.provider.symmetric \
         org.bouncycastle.jce.provider.test \
         org.bouncycastle.ocsp \
         org.bouncycastle.ocsp.test \
@@ -278,6 +287,7 @@ then
 
     (cd src/java/security/spec; javac -d ../../../../classes -classpath ../../../../classes *.java )
 
+    (cd src/org/bouncycastle/jcajce/provider; javac -d ../../../../../classes -classpath ../../../../../classes:../../../../../src [abcis]*/*.java [abcis]*/*/*.java )
     (cd src/org/bouncycastle; javac -d ../../../classes -classpath ../../../classes:../../../src *.java [abci]*/*.java [abci]*/*/*.java [abci]*/*/*/*.java )
     (cd src/org/bouncycastle; javac -d ../../../classes -classpath ../../../classes:../../../src [jmoptuvx]*/*.java [jmoptuvx]*/*/*.java [jmoptuvx]*/*/*/*.java [jmoptuvx]*/*/*/*/*.java)
 
