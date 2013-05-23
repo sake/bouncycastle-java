@@ -34,7 +34,9 @@ public class SipHash
      */
     public SipHash()
     {
-        this(2, 4);
+        // use of this confuses flow analyser on earlier JDKs.
+        this.c = 2;
+        this.d = 4;
     }
 
     /**
