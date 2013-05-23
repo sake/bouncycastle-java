@@ -283,6 +283,11 @@ public class Collections
         };
     }
 
+    public static Map unmodifiableMap(Map s)
+    {
+        return new UnmodifiableMap(s);
+    }
+
     static class UnmodifiableMap
         extends UnmodifiableCollection
         implements Map
