@@ -70,7 +70,7 @@ public class JceOpenSSLPKCS8DecryptorProviderBuilder
                     {
                         PBES2Parameters params = PBES2Parameters.getInstance(algorithm.getParameters());
                         KeyDerivationFunc func = params.getKeyDerivationFunc();
-                        KeyDerivationFunc scheme = params.getEncryptionScheme();
+                        EncryptionScheme scheme = params.getEncryptionScheme();
                         PBKDF2Params defParams = (PBKDF2Params)func.getParameters();
 
                         int iterationCount = defParams.getIterationCount().intValue();
