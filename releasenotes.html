@@ -30,6 +30,8 @@ Release 1.49
 <li>The BC CertificateFactory no longer returns null for CertificateFactory.getCertPathEncodings().</li>
 <li>PKCS10CertificationRequestBuilder now encodes no attributes as empty by default. Encoding as absent is still available via a boolean flag.</li>
 <li>DERT61String has been reverted back to its previous implementaion. A new class DERT61UTF8String has been introduced which defaults to UTF-8 encoding.</li>
+<li>OAEPEncoding could throw an array output bounds exception for small keys with large mask function digests. This has been fixed.</li>
+<li>PEMParser would throw a NullPointerException if it ran into explicit EC curve parameters, it would also throw an Exception if the named curve was not already defined. The parser now returns X9ECParmameters for explicit parameters and returns an ASN1ObjectIdentifier for a named curve.</li>
 </ul>
 <h3>2.1.3 Additional Features and Functionality</h3>
 <ul>
@@ -54,10 +56,13 @@ class NonMemoableDigest has been added which hides the Memoable interface where 
 <li>The OpenPGP API now supports password changing on secret key rings where only the private keys for the subkeys have been exported.</li>
 <li>Support has been added to the lightweight API for RSA-KEM and ECIES-KEM.</li>
 <li>Support has been added for NIST SP 800-38D - GMAC to AES and other 128 bit block size algorithms.</li>
+<li>The org.bouncycastle.crypto.tls package has been extended to support client and server side TLS 1.1.</li>
+<li>The org.bouncycastle.crypto.tls package has been extended to support client and server side DTLS 1.0.</li>
 </ul>
 <h3>2.1.4 Notes</h3>
 <ul>
-<li>The NTRU implementation has been moved into the org.bouncycastle.pqc package hierarchy</li>
+<li>The NTRU implementation has been moved into the org.bouncycastle.pqc package hierarchy.</li>
+<li>The change to PEMParser to support explicit EC curves is not backward compatible. If you run into a named curve you need to use org.bouncycastle.asn1.x9.ECNamedCurveTable.getByOID() to look the curve up if required.</li>
 </ul>
 
 <h3>2.2.1 Version</h3>

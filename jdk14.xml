@@ -54,6 +54,7 @@
                 <exclude name="**/pqc/**/EncryptionKeyTest.java" />
                 <exclude name="**/pqc/**/BitStringTest.java" />
 		<exclude name="**/jcajce/provider/test/*.java" />
+		<exclude name="**/jce/provider/test/JceTestUtil.java" />
             </fileset>
             <fileset dir="src" includes="**/*.properties" />
             <fileset dir="test/src" includes="**/*.html" />
