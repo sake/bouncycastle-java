@@ -326,7 +326,7 @@ public class OAEPEncoding
         byte[]  C = new byte[4];
         int     counter = 0;
 
-        hash.reset();
+        mgf1Hash.reset();
 
         do
         {
