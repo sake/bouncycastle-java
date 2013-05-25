@@ -32,6 +32,7 @@ Release 1.49
 <li>DERT61String has been reverted back to its previous implementaion. A new class DERT61UTF8String has been introduced which defaults to UTF-8 encoding.</li>
 <li>OAEPEncoding could throw an array output bounds exception for small keys with large mask function digests. This has been fixed.</li>
 <li>PEMParser would throw a NullPointerException if it ran into explicit EC curve parameters, it would also throw an Exception if the named curve was not already defined. The parser now returns X9ECParmameters for explicit parameters and returns an ASN1ObjectIdentifier for a named curve.</li>
+<li>The V2TBSCertListGenerator was adding the wrong date type for CRL invalidity date extensions. This has been fixed.</li>
 </ul>
 <h3>2.1.3 Additional Features and Functionality</h3>
 <ul>
@@ -58,6 +59,7 @@ class NonMemoableDigest has been added which hides the Memoable interface where 
 <li>Support has been added for NIST SP 800-38D - GMAC to AES and other 128 bit block size algorithms.</li>
 <li>The org.bouncycastle.crypto.tls package has been extended to support client and server side TLS 1.1.</li>
 <li>The org.bouncycastle.crypto.tls package has been extended to support client and server side DTLS 1.0.</li>
+<li>A basic commitment package has been introduced into the lightweight API containing a digest based commitment scheme.</li>
 </ul>
 <h3>2.1.4 Notes</h3>
 <ul>

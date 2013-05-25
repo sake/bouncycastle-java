@@ -25,9 +25,11 @@ then
 src/org/bouncycastle/crypto/*.java \
 src/org/bouncycastle/crypto/*.html \
 src/org/bouncycastle/crypto/agreement \
+src/org/bouncycastle/crypto/commitments \
 src/org/bouncycastle/crypto/digests \
 src/org/bouncycastle/crypto/encodings \
 src/org/bouncycastle/crypto/engines \
+src/org/bouncycastle/crypto/kems \
 src/org/bouncycastle/crypto/examples \
 src/org/bouncycastle/crypto/paddings \
 src/org/bouncycastle/crypto/generators \
@@ -101,11 +103,11 @@ src/org/bouncycastle/openpgp \
     rm -r lcrypto-j2me-$base/src/org/bouncycastle/util/io/pem
 
     (cd lcrypto-j2me-$base;
-        rm -rf src/org/bouncycastle/math/ntru
-        rm -rf src/org/bouncycastle/crypto/test/ntru
-        rm -rf src/org/bouncycastle/crypto/*/NTRU*
-        rm -rf src/org/bouncycastle/crypto/*/BitStringTest*
-        rm -rf src/org/bouncycastle/crypto/*/IndexGenerator*
+        rm -rf src/org/bouncycastle/pqc/math/ntru
+        rm -rf src/org/bouncycastle/pqc/crypto/test/ntru
+        rm -rf src/org/bouncycastle/pqc/crypto/*/NTRU*
+        rm -rf src/org/bouncycastle/pqc/crypto/*/BitStringTest*
+        rm -rf src/org/bouncycastle/pqc/crypto/*/IndexGenerator*
         find src -name AllTests.java -exec rm {} \;
         find src -name jcajce -exec rm -r {} \;
         rm src/org/bouncycastle/asn1/test/GetInstanceTest.java
@@ -131,6 +133,7 @@ src/org/bouncycastle/openpgp \
     -group "EAC Support Packages" "org.bouncycastle.eac*" \
     -group "TSP Support Packages" "org.bouncycastle.tsp*" \
     -group "PKCS Support Packages" "org.bouncycastle.pkcs*" \
+    -group "Post-Quantum Crypto Packages" "org.bouncycastle.pqc*" \
     -group "Utility Packages" "org.bouncycastle.util*:org.bouncycastle.math*" \
       -classpath classes \
       -d docs -sourcepath src -breakiterator \
@@ -164,11 +167,13 @@ src/org/bouncycastle/openpgp \
     org.bouncycastle.math.ec \
     org.bouncycastle.crypto \
     org.bouncycastle.crypto.agreement \
+    org.bouncycastle.crypto.commitments \
     org.bouncycastle.crypto.digests \
     org.bouncycastle.crypto.encodings \
     org.bouncycastle.crypto.engines \
     org.bouncycastle.crypto.generators \
     org.bouncycastle.crypto.io \
+    org.bouncycastle.crypto.kems \
     org.bouncycastle.crypto.macs \
     org.bouncycastle.crypto.modes \
     org.bouncycastle.crypto.params \
@@ -180,6 +185,13 @@ src/org/bouncycastle/openpgp \
     org.bouncycastle.crypto.test \
     org.bouncycastle.crypto.util \
     org.bouncycastle.crypto.examples \
+    org.bouncycastle.pqc.asn1 \
+    org.bouncycastle.pqc.crypto \
+    org.bouncycastle.pqc.crypto.rainbow \
+    org.bouncycastle.pqc.crypto.mceliece \
+    org.bouncycastle.pqc.crypto.gmss \
+    org.bouncycastle.pqc.math.linearalgebra \
+    org.bouncycastle.util \
     org.bouncycastle.util.encoders \
     org.bouncycastle.util.test > /dev/null \
 
