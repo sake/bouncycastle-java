@@ -61,16 +61,6 @@ public class CMSSignedDataGenerator
     {
     }
 
-    /**
-     * constructor allowing specific source of randomness
-     * @param rand instance of SecureRandom to use
-     */
-    public CMSSignedDataGenerator(
-        SecureRandom rand)
-    {
-        super(rand);
-    }
-
     public CMSSignedData generate(
         CMSTypedData content)
         throws CMSException

@@ -5,7 +5,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
-import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -16,13 +15,10 @@ import org.bouncycastle.asn1.ASN1EncodableVector;
 import org.bouncycastle.asn1.ASN1Generator;
 import org.bouncycastle.asn1.ASN1ObjectIdentifier;
 import org.bouncycastle.asn1.ASN1OctetStringParser;
-import org.bouncycastle.asn1.ASN1Primitive;
-import org.bouncycastle.asn1.ASN1Sequence;
 import org.bouncycastle.asn1.ASN1SequenceParser;
 import org.bouncycastle.asn1.ASN1Set;
 import org.bouncycastle.asn1.ASN1SetParser;
 import org.bouncycastle.asn1.ASN1StreamParser;
-import org.bouncycastle.asn1.ASN1TaggedObject;
 import org.bouncycastle.asn1.BERSequenceGenerator;
 import org.bouncycastle.asn1.BERSetParser;
 import org.bouncycastle.asn1.BERTaggedObject;
@@ -34,19 +30,15 @@ import org.bouncycastle.asn1.cms.ContentInfoParser;
 import org.bouncycastle.asn1.cms.SignedDataParser;
 import org.bouncycastle.asn1.cms.SignerInfo;
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
-import org.bouncycastle.asn1.x509.AttributeCertificate;
-import org.bouncycastle.asn1.x509.Certificate;
-import org.bouncycastle.asn1.x509.CertificateList;
-import org.bouncycastle.cert.X509AttributeCertificateHolder;
-import org.bouncycastle.cert.X509CRLHolder;
-import org.bouncycastle.cert.X509CertificateHolder;
+import org.bouncycastle.cert.jcajce.JcaCertStoreBuilder;
 import org.bouncycastle.operator.DigestCalculator;
 import org.bouncycastle.operator.DigestCalculatorProvider;
 import org.bouncycastle.operator.OperatorCreationException;
 import org.bouncycastle.operator.bc.BcDigestCalculatorProvider;
-import org.bouncycastle.util.CollectionStore;
 import org.bouncycastle.util.Store;
 import org.bouncycastle.util.io.Streams;
+import org.bouncycastle.x509.NoSuchStoreException;
+import org.bouncycastle.x509.X509Store;
 
 /**
  * Parsing class for an CMS Signed Data object from an input stream.
@@ -103,8 +95,11 @@ public class CMSSignedDataParser
     private Map                     digests;
 
     private SignerInformationStore  _signerInfoStore;
+    private X509Store               _attributeStore;
     private ASN1Set                 _certSet, _crlSet;
     private boolean                 _isCertCrlParsed;
+    private X509Store               _certificateStore;
+    private X509Store               _crlStore;
 
     public CMSSignedDataParser(
         DigestCalculatorProvider digestCalculatorProvider,
@@ -285,90 +280,59 @@ public class CMSSignedDataParser
         return _signerInfoStore;
     }
 
+    /**
+     * Return any X.509 certificate objects in this SignedData structure as a Store of X509CertificateHolder objects.
+     *
+     * @return a Store of X509CertificateHolder objects.
+     */
     public Store getCertificates()
         throws CMSException
     {
         populateCertCrlSets();
 
-        ASN1Set certSet = _certSet;
-
-        if (certSet != null)
-        {
-            List    certList = new ArrayList(certSet.size());
-
-            for (Enumeration en = certSet.getObjects(); en.hasMoreElements();)
-            {
-                ASN1Primitive obj = ((ASN1Encodable)en.nextElement()).toASN1Primitive();
-
-                if (obj instanceof ASN1Sequence)
-                {
-                    certList.add(new X509CertificateHolder(Certificate.getInstance(obj)));
-                }
-            }
-
-            return new CollectionStore(certList);
-        }
-
-        return new CollectionStore(new ArrayList());
+        return HELPER.getCertificates(_certSet);
     }
 
+    /**
+     * Return any X.509 CRL objects in this SignedData structure as a Store of X509CRLHolder objects.
+     *
+     * @return a Store of X509CRLHolder objects.
+     */
     public Store getCRLs()
         throws CMSException
     {
         populateCertCrlSets();
 
-        ASN1Set crlSet = _crlSet;
-
-        if (crlSet != null)
-        {
-            List    crlList = new ArrayList(crlSet.size());
-
-            for (Enumeration en = crlSet.getObjects(); en.hasMoreElements();)
-            {
-                ASN1Primitive obj = ((ASN1Encodable)en.nextElement()).toASN1Primitive();
-
-                if (obj instanceof ASN1Sequence)
-                {
-                    crlList.add(new X509CRLHolder(CertificateList.getInstance(obj)));
-                }
-            }
-
-            return new CollectionStore(crlList);
-        }
-
-        return new CollectionStore(new ArrayList());
+        return HELPER.getCRLs(_crlSet);
     }
 
+    /**
+     * Return any X.509 attribute certificate objects in this SignedData structure as a Store of X509AttributeCertificateHolder objects.
+     *
+     * @return a Store of X509AttributeCertificateHolder objects.
+     */
     public Store getAttributeCertificates()
         throws CMSException
     {
         populateCertCrlSets();
 
-        ASN1Set certSet = _certSet;
+        return HELPER.getAttributeCertificates(_certSet);
+    }
 
-        if (certSet != null)
-        {
-            List    certList = new ArrayList(certSet.size());
+    /**
+     * Return any OtherRevocationInfo OtherRevInfo objects of the type indicated by otherRevocationInfoFormat in
+     * this SignedData structure.
+     *
+     * @param otherRevocationInfoFormat OID of the format type been looked for.
+     *
+     * @return a Store of ASN1Encodable objects representing any objects of otherRevocationInfoFormat found.
+     */
+    public Store getOtherRevocationInfo(ASN1ObjectIdentifier otherRevocationInfoFormat)
+        throws CMSException
+    {
+        populateCertCrlSets();
 
-            for (Enumeration en = certSet.getObjects(); en.hasMoreElements();)
-            {
-                ASN1Primitive obj = ((ASN1Encodable)en.nextElement()).toASN1Primitive();
-
-                if (obj instanceof ASN1TaggedObject)
-                {
-                    ASN1TaggedObject tagged = (ASN1TaggedObject)obj;
-
-                    if (tagged.getTagNo() == 2)
-                    {
-                        certList.add(new X509AttributeCertificateHolder(AttributeCertificate.getInstance(ASN1Sequence.getInstance(tagged, false))));
-                    }
-                }
-            }
-
-            return new CollectionStore(certList);
-        }
-
-        return new CollectionStore(new ArrayList());
+        return HELPER.getOtherRevocationInfo(otherRevocationInfoFormat, _crlSet);
     }
 
     private void populateCertCrlSets()

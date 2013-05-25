@@ -1,10 +1,22 @@
 package org.bouncycastle.cms;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 
+import org.bouncycastle.asn1.ASN1Encodable;
+import org.bouncycastle.asn1.ASN1ObjectIdentifier;
+import org.bouncycastle.asn1.ASN1Primitive;
+import org.bouncycastle.asn1.ASN1Sequence;
+import org.bouncycastle.asn1.ASN1Set;
+import org.bouncycastle.asn1.ASN1TaggedObject;
 import org.bouncycastle.asn1.DERNull;
-import org.bouncycastle.asn1.DERObjectIdentifier;
+import org.bouncycastle.asn1.cms.OtherRevocationInfoFormat;
 import org.bouncycastle.asn1.cryptopro.CryptoProObjectIdentifiers;
 import org.bouncycastle.asn1.eac.EACObjectIdentifiers;
 import org.bouncycastle.asn1.nist.NISTObjectIdentifiers;
@@ -12,8 +24,16 @@ import org.bouncycastle.asn1.oiw.OIWObjectIdentifiers;
 import org.bouncycastle.asn1.pkcs.PKCSObjectIdentifiers;
 import org.bouncycastle.asn1.teletrust.TeleTrusTObjectIdentifiers;
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
+import org.bouncycastle.asn1.x509.AttributeCertificate;
+import org.bouncycastle.asn1.x509.Certificate;
+import org.bouncycastle.asn1.x509.CertificateList;
 import org.bouncycastle.asn1.x509.X509ObjectIdentifiers;
 import org.bouncycastle.asn1.x9.X9ObjectIdentifiers;
+import org.bouncycastle.cert.X509AttributeCertificateHolder;
+import org.bouncycastle.cert.X509CRLHolder;
+import org.bouncycastle.cert.X509CertificateHolder;
+import org.bouncycastle.util.CollectionStore;
+import org.bouncycastle.util.Store;
 
 class CMSSignedHelper
 {
@@ -23,7 +43,7 @@ class CMSSignedHelper
     private static final Map     digestAlgs = new HashMap();
     private static final Map     digestAliases = new HashMap();
 
-    private static void addEntries(DERObjectIdentifier alias, String digest, String encryption)
+    private static void addEntries(ASN1ObjectIdentifier alias, String digest, String encryption)
     {
         digestAlgs.put(alias.getId(), digest);
         encryptionAlgs.put(alias.getId(), encryption);
@@ -136,19 +156,117 @@ class CMSSignedHelper
     {
         if (algId.getParameters() == null)
         {
-            return new AlgorithmIdentifier(algId.getObjectId(), DERNull.INSTANCE);
+            return new AlgorithmIdentifier(algId.getAlgorithm(), DERNull.INSTANCE);
         }
 
         return algId;
     }
 
-    void setSigningEncryptionAlgorithmMapping(DERObjectIdentifier oid, String algorithmName)
+    void setSigningEncryptionAlgorithmMapping(ASN1ObjectIdentifier oid, String algorithmName)
     {
         encryptionAlgs.put(oid.getId(), algorithmName);
     }
 
-    void setSigningDigestAlgorithmMapping(DERObjectIdentifier oid, String algorithmName)
+    void setSigningDigestAlgorithmMapping(ASN1ObjectIdentifier oid, String algorithmName)
     {
         digestAlgs.put(oid.getId(), algorithmName);
+    }
+
+    Store getCertificates(ASN1Set certSet)
+    {
+        if (certSet != null)
+        {
+            List certList = new ArrayList(certSet.size());
+
+            for (Enumeration en = certSet.getObjects(); en.hasMoreElements();)
+            {
+                ASN1Primitive obj = ((ASN1Encodable)en.nextElement()).toASN1Primitive();
+
+                if (obj instanceof ASN1Sequence)
+                {
+                    certList.add(new X509CertificateHolder(Certificate.getInstance(obj)));
+                }
+            }
+
+            return new CollectionStore(certList);
+        }
+
+        return new CollectionStore(new ArrayList());
+    }
+
+    Store getAttributeCertificates(ASN1Set certSet)
+    {
+        if (certSet != null)
+        {
+            List certList = new ArrayList(certSet.size());
+
+            for (Enumeration en = certSet.getObjects(); en.hasMoreElements();)
+            {
+                ASN1Primitive obj = ((ASN1Encodable)en.nextElement()).toASN1Primitive();
+
+                if (obj instanceof ASN1TaggedObject)
+                {
+                    certList.add(new X509AttributeCertificateHolder(AttributeCertificate.getInstance(((ASN1TaggedObject)obj).getObject())));
+                }
+            }
+
+            return new CollectionStore(certList);
+        }
+
+        return new CollectionStore(new ArrayList());
+    }
+
+    Store getCRLs(ASN1Set crlSet)
+    {
+        if (crlSet != null)
+        {
+            List crlList = new ArrayList(crlSet.size());
+
+            for (Enumeration en = crlSet.getObjects(); en.hasMoreElements();)
+            {
+                ASN1Primitive obj = ((ASN1Encodable)en.nextElement()).toASN1Primitive();
+
+                if (obj instanceof ASN1Sequence)
+                {
+                    crlList.add(new X509CRLHolder(CertificateList.getInstance(obj)));
+                }
+            }
+
+            return new CollectionStore(crlList);
+        }
+
+        return new CollectionStore(new ArrayList());
+    }
+
+    Store getOtherRevocationInfo(ASN1ObjectIdentifier otherRevocationInfoFormat, ASN1Set crlSet)
+    {
+        if (crlSet != null)
+        {
+            List    crlList = new ArrayList(crlSet.size());
+
+            for (Enumeration en = crlSet.getObjects(); en.hasMoreElements();)
+            {
+                ASN1Primitive obj = ((ASN1Encodable)en.nextElement()).toASN1Primitive();
+
+                if (obj instanceof ASN1TaggedObject)
+                {
+                    ASN1TaggedObject tObj = ASN1TaggedObject.getInstance(obj);
+
+                    if (tObj.getTagNo() == 1)
+                    {
+                        OtherRevocationInfoFormat other = OtherRevocationInfoFormat.getInstance(tObj, false);
+
+                        if (otherRevocationInfoFormat.equals(other.getInfoFormat()))
+                        {
+                            crlList.add(other.getInfo());
+                        }
+                    }
+                }
+            }
+
+            return new CollectionStore(crlList);
+        }
+
+        return new CollectionStore(new ArrayList());
     }
 }
