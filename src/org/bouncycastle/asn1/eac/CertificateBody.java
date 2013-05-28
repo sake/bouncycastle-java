@@ -145,7 +145,7 @@ public class CertificateBody
             EACTags.ISSUER_IDENTIFICATION_NUMBER, certificationAuthorityReference.getEncoded()));
         setPublicKey(publicKey);
         setCertificateHolderReference(new DERApplicationSpecific(
-				EACTags.CARDHOLDER_NAME, certificateHolderReference.getEncoded()));
+            EACTags.CARDHOLDER_NAME, certificateHolderReference.getEncoded()));
         setCertificateHolderAuthorization(certificateHolderAuthorization);
         try
         {
@@ -194,51 +194,66 @@ public class CertificateBody
     }
 
     private void setCertificateProfileIdentifier(DERApplicationSpecific certificateProfileIdentifier)
-	throws IllegalArgumentException {
-		if (certificateProfileIdentifier.getApplicationTag() == EACTags.INTERCHANGE_PROFILE) {
-			this.certificateProfileIdentifier = certificateProfileIdentifier;
-			certificateType |= CPI;
-		}
-		else
-			throw new IllegalArgumentException("Not an Iso7816Tags.INTERCHANGE_PROFILE tag :"+ EACTags.encodeTag(certificateProfileIdentifier));
-	}
+        throws IllegalArgumentException
+    {
+        if (certificateProfileIdentifier.getApplicationTag() == EACTags.INTERCHANGE_PROFILE)
+        {
+            this.certificateProfileIdentifier = certificateProfileIdentifier;
+            certificateType |= CPI;
+        }
+        else
+        {
+            throw new IllegalArgumentException("Not an Iso7816Tags.INTERCHANGE_PROFILE tag :" + EACTags.encodeTag(certificateProfileIdentifier));
+        }
+    }
 
     private void setCertificateHolderReference(DERApplicationSpecific certificateHolderReference)
-	throws IllegalArgumentException {
-		if (certificateHolderReference.getApplicationTag() == EACTags.CARDHOLDER_NAME) {
-			this.certificateHolderReference = certificateHolderReference;
-			certificateType |= CHR;
-		}
-		else
-			throw new IllegalArgumentException("Not an Iso7816Tags.CARDHOLDER_NAME tag");
-	}
-
-    	/**
-	 * set the CertificationAuthorityReference.
-	 * @param certificationAuthorityReference the DERApplicationSpecific containing the CertificationAuthorityReference.
-	 * @throws IllegalArgumentException if the DERApplicationSpecific is not valid.
-	 */
-	private void setCertificationAuthorityReference(
-			DERApplicationSpecific certificationAuthorityReference)
-				throws IllegalArgumentException {
-		if (certificationAuthorityReference.getApplicationTag() == EACTags.ISSUER_IDENTIFICATION_NUMBER) {
-			this.certificationAuthorityReference = certificationAuthorityReference;
-			certificateType |= CAR;
-		}
-		else
-			throw new IllegalArgumentException("Not an Iso7816Tags.ISSUER_IDENTIFICATION_NUMBER tag");
-	}
-
-    	/**
-	 * set the public Key
-	 * @param publicKey : the DERApplicationSpecific containing the public key
-	 * @throws java.io.IOException
-	 */
-	private void setPublicKey(PublicKeyDataObject publicKey)
+        throws IllegalArgumentException
     {
-		this.publicKey = PublicKeyDataObject.getInstance(publicKey);
+        if (certificateHolderReference.getApplicationTag() == EACTags.CARDHOLDER_NAME)
+        {
+            this.certificateHolderReference = certificateHolderReference;
+            certificateType |= CHR;
+        }
+        else
+        {
+            throw new IllegalArgumentException("Not an Iso7816Tags.CARDHOLDER_NAME tag");
+        }
+    }
+
+    /**
+     * set the CertificationAuthorityReference.
+     *
+     * @param certificationAuthorityReference
+     *         the DERApplicationSpecific containing the CertificationAuthorityReference.
+     * @throws IllegalArgumentException if the DERApplicationSpecific is not valid.
+     */
+    private void setCertificationAuthorityReference(
+        DERApplicationSpecific certificationAuthorityReference)
+        throws IllegalArgumentException
+    {
+        if (certificationAuthorityReference.getApplicationTag() == EACTags.ISSUER_IDENTIFICATION_NUMBER)
+        {
+            this.certificationAuthorityReference = certificationAuthorityReference;
+            certificateType |= CAR;
+        }
+        else
+        {
+            throw new IllegalArgumentException("Not an Iso7816Tags.ISSUER_IDENTIFICATION_NUMBER tag");
+        }
+    }
+
+    /**
+     * set the public Key
+     *
+     * @param publicKey : the DERApplicationSpecific containing the public key
+     * @throws java.io.IOException
+     */
+    private void setPublicKey(PublicKeyDataObject publicKey)
+    {
+        this.publicKey = PublicKeyDataObject.getInstance(publicKey);
         this.certificateType |= PK;
-	}
+    }
 
     /**
      * create a request type Iso7816CertificateBody.
