@@ -16,25 +16,25 @@ import org.bouncycastle.asn1.DEROctetString;
  * <p/>
  * <pre>
  *  CertificateBody ::= SEQUENCE {
- *  	// version of the certificate format. Must be 0 (version 1)
- *      CertificateProfileIdentifer 		DERApplicationSpecific,
+ *      // version of the certificate format. Must be 0 (version 1)
+ *      CertificateProfileIdentifer         DERApplicationSpecific,
  *      //uniquely identifies the issuinng CA's signature key pair
  *      // contains the iso3166-1 alpha2 encoded country code, the
  *      // name of issuer and the sequence number of the key pair.
- *      CertificationAuthorityReference		DERApplicationSpecific,
+ *      CertificationAuthorityReference        DERApplicationSpecific,
  *      // stores the encoded public key
- *      PublicKey							Iso7816PublicKey,
+ *      PublicKey                            Iso7816PublicKey,
  *      //associates the public key contained in the certificate with a unique name
  *      // contains the iso3166-1 alpha2 encoded country code, the
  *      // name of the holder and the sequence number of the key pair.
- *      certificateHolderReference			DERApplicationSpecific,
+ *      certificateHolderReference            DERApplicationSpecific,
  *      // Encodes the role of the holder (i.e. CVCA, DV, IS) and assigns read/write
  *      // access rights to data groups storing sensitive data
- *      certificateHolderAuthorization		Iso7816CertificateHolderAuthorization,
+ *      certificateHolderAuthorization        Iso7816CertificateHolderAuthorization,
  *      // the date of the certificate generation
- *      CertificateEffectiveDate			DERApplicationSpecific,
+ *      CertificateEffectiveDate            DERApplicationSpecific,
  *      // the date after wich the certificate expires
- *      certificateExpirationDate			DERApplicationSpecific
+ *      certificateExpirationDate            DERApplicationSpecific
  *  }
  * </pre>
  */
