@@ -149,11 +149,13 @@ be operated in.
 <tr><td><b>CBCBlockCipher</b></td><td>BlockCipher</td><td>&nbsp;</td></tr>
 <tr><td><b>CFBBlockCipher</b></td><td>BlockCipher, block size (in bits)</td><td>&nbsp;</td></tr>
 <tr><td><b>CCMBlockCipher</b></td><td>BlockCipher</td><td>Packet mode - requires all data up front.</td></tr>
+<tr><td><b>GCMBlockCipher</b></td><td>BlockCipher</td><td>Packet mode - NIST SP 800-38D.</td></tr>
 <tr><td><b>EAXBlockCipher</b></td><td>BlockCipher</td><td>&nbsp;</td></tr>
 <tr><td><b>OFBBlockCipher</b></td><td>BlockCipher, block size (in bits)</td><td>&nbsp;</td></tr>
 <tr><td><b>SICBlockCipher</b></td><td>BlockCipher, block size (in bits)</td><td>Also known as CTR mode</td></tr>
 <tr><td><b>OpenPGPCFBBlockCipher</b></td><td>BlockCipher</td><td>&nbsp;</td></tr>
 <tr><td><b>GOFBBlockCipher</b></td><td>BlockCipher</td><td>GOST OFB mode</td></tr>
+
 </table>
 
 <p>
@@ -297,21 +299,47 @@ implementations
 <tr><th>Name</th><th>Output (in bits)</th><th>Notes</th></tr>
 <tr><td><b>CBCBlockCipherMac</b></td><td>blocksize/2 unless specified</td><td>&nbsp;</td></tr>
 <tr><td><b>CFBBlockCipherMac</b></td><td>blocksize/2, in CFB 8 mode, unless specified</td><td>&nbsp;</td></tr>
+<tr><td><b>CMac</b></td><td>24 to 128 bits</td><td>Usable with block ciphers, NIST SP 800-38B.</td></tr>
+<tr><td><b>GMac</b></td><td>96 to 128 bits</td><td>Usable with GCM mode ciphers, defined for AES, NIST SP 800-38D.</td></tr>
+<tr><td><b>GOST28147Mac</b></td><td>32 bits</td><td>&nbsp;</td></tr>
+<tr><td><b>ISO9797Alg3Mac</b></td><td>multiple of 8 bits up to underlying cipher size.</td><td>&nbsp;</td></tr>
 <tr><td><b>HMac</b></td><td>digest length</td><td>&nbsp;</td></tr>
+<tr><td><b>SipHash</b></td><td>64 bits</td><td>&nbsp;</td></tr>
+<tr><td><b>VMPCMac</b></td><td>160 bits</td><td>&nbsp;</td></tr>
 </table>
 
 <h4>PBE</h4>
 
 <p>
 The base class is <b>PBEParametersGenerator</b> and has the following
-sub-classes 
-<p>
+sub-classes
+</p>
 <table cellpadding=5 cellspacing=0 border=1 width=80%>
 <tr><th>Name</th><th>Constructor</th><th>Notes</th></tr>
 <tr><td><b>PKCS5S1ParametersGenerator</b></td><td>Digest</td><td>&nbsp;</td></tr>
 <tr><td><b>PKCS5S2ParametersGenerator</b></td><td>&nbsp;</td><td>Uses SHA1/Hmac as defined</td></tr>
 <tr><td><b>PKCS12ParametersGenerator</b></td><td>Digest</td><td>&nbsp;</td></tr>
 <tr><td><b>OpenSSLPBEParametersGenerator</b></td><td>&nbsp;</td><td>Uses MD5 as defined</td></tr>
+</table>
+
+<h4>IESCipher</h4>
+<p>
+The IES cipher is based on the one described in IEEE P1363a (draft 10), for
+use with either traditional Diffie-Hellman or Elliptic Curve Diffie-Hellman.
+</p>
+<b>Note:</b> At the moment this is still a draft, don't use it for anything
+that may be subject to long term storage, the key values produced may well
+change as the draft is finalised.
+</p>
+
+<h4>Commitments</h4>
+<p>
+The base class is <b>Committer</b> and has the following
+sub-classes
+</p>
+<table cellpadding=5 cellspacing=0 border=1 width=80%>
+<tr><th>Name</th>><th>Notes</th></tr>
+<tr><td><b>HashCommitter</b></td><td>Hash commitment algorithm described in Usenix RPC MixNet Paper (2002)</td></tr>
 </table>
 
 <h4>Key Agreement</h4>
@@ -321,21 +349,24 @@ version, and one for use with long term public keys. Two versions of
 key agreement using Elliptic Curve cryptography are also supported,
 standard Diffie-Hellman key agreement and standard key agreement with
 co-factors.
+</p>
 <p>
 The agreement APIs are in the <b>org.bouncycastle.crypto.agreement</b> package.
 Classes for generating Diffie-Hellman parameters can be found in the
 <b>org.bouncycastle.crypto.params</b> and <b>org.bouncycastle.crypto.generators</b> packages.
-<p>
+</p>
 
-<h4>IESCipher</h4>
+<h4>Key Encapsulation Mechanisms</h4>
 <p>
-The IES cipher is based on the one described in IEEE P1363a (draft 10), for
-use with either traditional Diffie-Hellman or Elliptic Curve Diffie-Hellman.
-<p>
-<b>Note:</b> At the moment this is still a draft, don't use it for anything
-that may be subject to long term storage, the key values produced may well
-change as the draft is finalised.
-<p>
+The base class is <b>KeyEncapsulation</b> and has the following
+sub-classes
+</p>
+<table cellpadding=5 cellspacing=0 border=1 width=80%>
+<tr><th>Name</th>><th>Notes</th></tr>
+<tr><td><b>RSAKeyEncapsulation</b></td><td>RSA-KEM from ISO 18033-2</td></tr>
+<tr><td><b>PKCS5S2ParametersGenerator</b></td><td>ECIES-KEM from ISO 18033-2</td></tr>
+</table>
+
 <h4>Signers</h4>
 <p>
 DSA, ECDSA, ISO-9796-2, GOST-3410-94, GOST-3410-2001, DSTU-4145-2002, and RSA-PSS are supported by the <b>org.bouncycastle.crypto.signers</b>
@@ -346,7 +377,25 @@ Classes for generating DSA and ECDSA parameters can be found in the
 <b>org.bouncycastle.crypto.params</b> and <b>org.bouncycastle.crypto.generators</b> packages.
 <p>
 
-<h3>4.3 ASN.1 package</h3>
+<h3>4.4 Elliptic Curve Transforms.</h3>
+
+<p>
+The org.bouncycastle.crypto.ec package contains implementations for a variety of EC cryptographic transforms such as EC ElGamal.
+</p>
+
+<h3>4.4 TLS/DTLS</h3>
+
+<p>
+The org.bouncycastle.crypto.tls package contains implementations for TLS 1.1 and DTLS 1.0.
+</p>
+
+<h3>4.5 Deterministic Random Bit Generators (DRBG) and SecureRandom wrappers</h3>
+
+<p>
+The org.bouncycastle.crypto.prng package contains implementations for a variety of bit generators including those
+    from SP 800-90A, as well as builders for SecureRandom objects based around them.
+</p>
+<h3>4.6 ASN.1 package</h3>
 
 <p>The light-weight API has direct interfaces into a package capable of
 reading and writing DER-encoded ASN.1 objects and for the generation
@@ -356,7 +405,7 @@ OutputStream classes are provided as well.
 <h2>5.0 Bouncy Castle Provider</h2>
 
 <p>The Bouncy Castle provider is a JCE compliant provider that
-is a wrapper built on top of the light-weight API.
+is a wrapper built on top of the light-weight API.</p>
 
 <p>
 The advantage for writing application code that uses the 
@@ -367,6 +416,7 @@ make use of a provider that has underlying hardware for
 cryptographic computation, or where an application may have
 been developed in an environment with cryptographic export
 controls.
+</p>
 
 <h3>5.1 Example</h3>
 
@@ -666,6 +716,11 @@ change as the draft is finalised.
 <li>SHA256withECDSA
 <li>SHA384withECDSA
 <li>SHA512withECDSA
+<li>SHA1withECNR
+<li>SHA224withECNR
+<li>SHA256withECNR
+<li>SHA384withECNR
+<li>SHA512withECNR
 <li>SHA224withRSA
 <li>SHA256withRSA
 <li>SHA384withRSA
@@ -711,10 +766,11 @@ The Bouncy Castle provider will read X.509 certficates (v2 or v3) as per the exa
 the java.security.cert.CertificateFactory class. They can be provided either
 in the normal PEM encoded format, or as DER binaries.
 <p>
-The CertificiateFactory will also read X.509 CRLs (v2) from either PEM or DER encodings.
+The CertificateFactory will also read X.509 CRLs (v2) from either PEM or DER encodings.
 <p>
-In addition to the classes in the org.bouncycastle.asn1.x509 package for certificate
-generation a more JCE "friendly" class is provided in the package org.bouncycastle.x509. The JCE "friendly" class supports RSA, DSA, and EC-DSA.
+In addition to the classes in the org.bouncycastle.asn1.x509 package for certificate, CRLs, and OCSP, CRMF, and CMP message
+generation a more JCE "friendly" class is provided in the package org.bouncycastle.cert. The JCE "friendly" classes found in the jcajce
+ subpackages support RSA, DSA, GOST, DTSU, and EC-DSA.
 <p>
 <h3>5.4 Keystore</h3>
 <p>
@@ -768,9 +824,9 @@ To be able to fully compile and utilise the BouncyCastle S/MIME
 package (including the test classes) you need the jar files for
 the following APIs.
 <ul>
-<li>Junit - <a href="http://www.junit.org">http://www.junit.org</a>
-<li>JavaMail - <a href="http://java.sun.com/products/javamail/index.html">http://java.sun.com/products/javamail/index.html</a>
-<li>The Java Activation Framework - <a href="http://java.sun.com/products/javabeans/glasgow/jaf.html">http://java.sun.com/products/javabeans/glasgow/jaf.html</a>
+<li>Junit - <a href="http://www.junit.org">http://www.junit.org</a></li>
+<li>JavaMail - <a href="http://java.sun.com/products/javamail/index.html">http://java.sun.com/products/javamail/index.html</a></li>
+<li>The Java Activation Framework - <a href="http://java.sun.com/products/javabeans/glasgow/jaf.html">http://java.sun.com/products/javabeans/glasgow/jaf.html</a></li>
 </ul>
 
 <h3>6.1 Setting up BouncyCastle S/MIME in JavaMail</h3>
@@ -788,7 +844,7 @@ The BouncyCastle S/MIME handlers may be set in JavaMail two ways.
     application/x-pkcs7-mime;; x-java-content-handler=org.bouncycastle.mail.smime.handlers.x_pkcs7_mime
     multipart/signed;; x-java-content-handler=org.bouncycastle.mail.smime.handlers.multipart_signed
     </pre>
-
+    </li>
 <li> DYNAMICALLY<br>
 
 	The following code will add the BouncyCastle S/MIME handlers dynamically:
@@ -811,6 +867,7 @@ The BouncyCastle S/MIME handlers may be set in JavaMail two ways.
         CommandMap.setDefaultCommandMap(_mailcap);
     } 
     </pre>
-
+    </li>
+    </ul>
 </body>
 </html>

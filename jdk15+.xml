@@ -48,8 +48,6 @@
         <checkstyle config="checkstyle/bc-checks.xml">
             <fileset dir="${src.dir}">
                 <include name="**/*.java"/>
-                <exclude name="**/sasn1/*.java"/>
-                <exclude name="**/sasn1/test/*.java"/>
             </fileset>
             <formatter type="plain"/>
             <formatter type="xml" toFile="${artifacts.dir}/checkstyle/${jdk.name}-errors.xml"/>
