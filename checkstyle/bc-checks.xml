@@ -36,11 +36,9 @@
             <property name="illegalPkgs" value="sun, com.sun, com"/>
         </module>
         <!-- defaults to sun.* packages -->
-<!--
         <module name="RedundantImport"/>
         <module name="UnusedImports"/>
         <module name="AvoidStarImport"/>
--->
 
         <!-- Check that equals is overridden properly -->
         <module name="CovariantEquals"/>
