@@ -1,6 +1,5 @@
 package org.bouncycastle.crypto.agreement.jpake;
 
-import java.io.Serializable;
 import java.math.BigInteger;
 
 /**
@@ -19,16 +18,8 @@ import java.math.BigInteger;
  * The received payload should be validated via
  * {@link JPAKEParticipant#validateRound3PayloadReceived(JPAKERound3Payload, BigInteger)}
  * <p/>
- * <p/>
- * This class is {@link Serializable}, so you can send it via Java serialization.
- * However, no specific mechanism for sending this payload to the other participant
- * is required.  It is perfectly safe to decompose the fields of this payload,
- * send those fields to the other participant in any format,
- * and reconstruct the payload on the other side using
- * {@link #JPAKERound3Payload(String, BigInteger)}
  */
 public class JPAKERound3Payload
-    implements Serializable
 {
     private static final long serialVersionUID = 1L;
 
