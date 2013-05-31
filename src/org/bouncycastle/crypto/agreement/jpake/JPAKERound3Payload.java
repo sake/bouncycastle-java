@@ -21,8 +21,6 @@ import java.math.BigInteger;
  */
 public class JPAKERound3Payload
 {
-    private static final long serialVersionUID = 1L;
-
     /**
      * The id of the {@link JPAKEParticipant} who created/sent this payload.
      */

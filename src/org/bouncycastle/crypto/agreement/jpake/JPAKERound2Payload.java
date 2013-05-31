@@ -22,8 +22,6 @@ import org.bouncycastle.util.Arrays;
  */
 public class JPAKERound2Payload
 {
-    private static final long serialVersionUID = 1L;
-
     /**
      * The id of the {@link JPAKEParticipant} who created/sent this payload.
      */
