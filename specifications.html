@@ -736,28 +736,31 @@ change as the draft is finalised.
 <p>Schemes:
 <ul>
 <li>PKCS5S1, any Digest, any symmetric Cipher, ASCII 
-<li>PKCS5S2, SHA1/HMac, any symmetric Cipher, ASCII 
+<li>PKCS5S2, SHA1/HMac, any symmetric Cipher, ASCII, UTF8
 <li>PKCS12, any Digest, any symmetric Cipher, Unicode 
 </ul>
 
 <p>
 Defined in Bouncy Castle JCE Provider
 <table cellpadding=5 cellspacing=0 border=1 width=80%>
-<tr><th>Name</th><th>Key Generation Scheme</th><th>Key Length (in bits)</th></tr>
-<tr><td>PBEWithMD2AndDES</td><td>PKCS5 Scheme 1</td><td>64</td></tr>
-<tr><td>PBEWithMD2AndRC2</td><td>PKCS5 Scheme 1</td><td>128</td></tr>
-<tr><td>PBEWithMD5AndDES</td><td>PKCS5 Scheme 1</td><td>64</td></tr>
-<tr><td>PBEWithMD5AndRC2</td><td>PKCS5 Scheme 1</td><td>128</td></tr>
-<tr><td>PBEWithSHA1AndDES</td><td>PKCS5 Scheme 1</td><td>64</td></tr>
-<tr><td>PBEWithSHA1AndRC2</td><td>PKCS5 Scheme 1</td><td>128</td></tr>
-<tr><td>PBEWithSHAAnd2-KeyTripleDES-CBC</td><td>PKCS12</td><td>128</td></tr>
-<tr><td>PBEWithSHAAnd3-KeyTripleDES-CBC</td><td>PKCS12</td><td>192</td></tr>
-<tr><td>PBEWithSHAAnd128BitRC2-CBC</td><td>PKCS12</td><td>128</td></tr>
-<tr><td>PBEWithSHAAnd40BitRC2-CBC</td><td>PKCS12</td><td>40</td></tr>
-<tr><td>PBEWithSHAAnd128BitRC4</td><td>PKCS12</td><td>128</td></tr>
-<tr><td>PBEWithSHAAnd40BitRC4</td><td>PKCS12</td><td>40</td></tr>
-<tr><td>PBEWithSHAAndTwofish-CBC</td><td>PKCS12</td><td>256</td></tr>
-<tr><td>PBEWithSHAAndIDEA-CBC</td><td>PKCS12</td><td>128</td></tr>
+<tr><th>Name</th><th>Key Generation Scheme</th><th>Key Length (in bits)</th><th>Char to Byte conversion</th></tr>
+<tr><td>PBEWithMD2AndDES</td><td>PKCS5 Scheme 1</td><td>64</td><td>8 bit chars</td></tr>
+<tr><td>PBEWithMD2AndRC2</td><td>PKCS5 Scheme 1</td><td>128</td><td>8 bit chars</td></tr>
+<tr><td>PBEWithMD5AndDES</td><td>PKCS5 Scheme 1</td><td>64</td><td>8 bit chars</td></tr>
+<tr><td>PBEWithMD5AndRC2</td><td>PKCS5 Scheme 1</td><td>128</td><td>8 bit chars</td></tr>
+<tr><td>PBEWithSHA1AndDES</td><td>PKCS5 Scheme 1</td><td>64</td><td>8 bit chars</td></tr>
+<tr><td>PBEWithSHA1AndRC2</td><td>PKCS5 Scheme 1</td><td>128</td><td>8 bit chars</td></tr>
+<tr><td>PBKDF2WithHmacSHA1</td><td>PKCS5 Scheme 2</td><td>variable</td><td>UTF-8 chars</td></tr>
+<tr><td>PBKDF2WithHmacSHA1AndUTF8</td><td>PKCS5 Scheme 2</td><td>variable</td><td>UTF-8 chars</td></tr>
+<tr><td>PBKDF2WithHmacSHA1And8bit</td><td>PKCS5 Scheme 2</td><td>variable</td><td>8 bit chars</td></tr>
+<tr><td>PBEWithSHAAnd2-KeyTripleDES-CBC</td><td>PKCS12</td><td>128</td><td>16 bit chars</td></tr>
+<tr><td>PBEWithSHAAnd3-KeyTripleDES-CBC</td><td>PKCS12</td><td>192</td><td>16 bit chars</td></tr>
+<tr><td>PBEWithSHAAnd128BitRC2-CBC</td><td>PKCS12</td><td>128</td><td>16 bit chars</td></tr>
+<tr><td>PBEWithSHAAnd40BitRC2-CBC</td><td>PKCS12</td><td>40</td><td>16 bit chars</td></tr>
+<tr><td>PBEWithSHAAnd128BitRC4</td><td>PKCS12</td><td>128</td><td>16 bit chars</td></tr>
+<tr><td>PBEWithSHAAnd40BitRC4</td><td>PKCS12</td><td>40</td><td>16 bit chars</td></tr>
+<tr><td>PBEWithSHAAndTwofish-CBC</td><td>PKCS12</td><td>256</td><td>16 bit chars</td></tr>
+<tr><td>PBEWithSHAAndIDEA-CBC</td><td>PKCS12</td><td>128</td><td>16 bit chars</td></tr>
 </table>
 
 <h3>5.3 Certificates</h3>
