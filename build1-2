@@ -86,11 +86,14 @@ then
             org.bouncycastle.math.ec \
             org.bouncycastle.crypto \
             org.bouncycastle.crypto.agreement \
+            org.bouncycastle.crypto.commitments \
             org.bouncycastle.crypto.digests \
             org.bouncycastle.crypto.encodings \
+            org.bouncycastle.crypto.ec \
             org.bouncycastle.crypto.engines \
             org.bouncycastle.crypto.generators \
             org.bouncycastle.crypto.io \
+            org.bouncycastle.crypto.kems \
             org.bouncycastle.crypto.macs \
             org.bouncycastle.crypto.modes \
             org.bouncycastle.crypto.paddings \
@@ -249,11 +252,14 @@ then
         org.bouncycastle.math.ec \
         org.bouncycastle.crypto \
         org.bouncycastle.crypto.agreement \
+        org.bouncycastle.crypto.commitments \
         org.bouncycastle.crypto.digests \
         org.bouncycastle.crypto.encodings \
+        org.bouncycastle.crypto.ec \
         org.bouncycastle.crypto.engines \
         org.bouncycastle.crypto.generators \
         org.bouncycastle.crypto.io \
+        org.bouncycastle.crypto.kems \
         org.bouncycastle.crypto.macs \
         org.bouncycastle.crypto.modes \
         org.bouncycastle.crypto.paddings \
