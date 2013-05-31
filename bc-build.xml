@@ -282,7 +282,6 @@
                  <exclude name="org/bouncycastle/operator/**/*.java" />
                  <exclude name="org/bouncycastle/jcajce/io/*.java" />
                  <exclude name="org/bouncycastle/jcajce/*.java" />
-                 <exclude name="org/bouncycastle/sasn1/**/*.java" />
                  <exclude name="org/bouncycastle/tsp/**/*.java" />
                  <exclude name="org/bouncycastle/openpgp/**/*.java" />
                  <exclude name="org/bouncycastle/bcpg/**/*.java" />
@@ -372,7 +371,6 @@
                  <exclude name="org/bouncycastle/jcajce/io/*.java" />
                  <exclude name="org/bouncycastle/jcajce/*.java" />
                  <exclude name="org/bouncycastle/operator/**/*.java" />
-                 <exclude name="org/bouncycastle/sasn1/**/*.java" />
                  <exclude name="org/bouncycastle/tsp/**/*.java" />
                  <exclude name="org/bouncycastle/openpgp/**/*.java" />
                  <exclude name="org/bouncycastle/bcpg/**/*.java" />
@@ -684,7 +682,7 @@
                 <group title="OCSP Support Packages" packages="org.bouncycastle.ocsp*" />
                 <group title="ASN.1 Support Packages" packages="org.bouncycastle.asn1*" />
                 <group title="Lightweight Crypto Packages" packages="org.bouncycastle.crypto*" />
-                <group title="Post-Quantum Crypto Packages" packages="org.bouncycastle.pqc.crypto*" />
+                <group title="Post-Quantum Crypto Packages" packages="org.bouncycastle.pqc.crypto*:org.bouncycastle.pqc.asn1" />
                 <group title="Utility Packages" packages="org.bouncycastle.util*:org.bouncycastle.math*" />
                 <group title="JCE Provider and Test Classes" packages="org.bouncycastle.jce.provider*" />
             </docElements>
@@ -726,7 +724,7 @@
                 <group title="ASN.1 Support Packages" packages="org.bouncycastle.asn1*" />
                 <group title="Lightweight Crypto Packages" packages="org.bouncycastle.crypto*" />
                 <group title="Utility Packages" packages="org.bouncycastle.util*:org.bouncycastle.math*" />
-                <group title="Post-Quantum Crypto Packages" packages="org.bouncycastle.pqc.crypto*" />
+                <group title="Post-Quantum Crypto Packages" packages="org.bouncycastle.pqc.crypto*:org.bouncycastle.pqc.asn1" />
                 <group title="JCE Provider and Test Classes" packages="org.bouncycastle.jce.provider*" />
             </docElements>
         </compile-doc>
@@ -853,7 +851,7 @@
                 <package name="org.bouncycastle.pqc.math.*" />
                 <package name="org.bouncycastle.math.*" />
                 <package name="org.bouncycastle.util.*" />
-                <group title="Post-Quantum Crypto Packages" packages="org.bouncycastle.pqc.crypto*" />
+                <group title="Post-Quantum Crypto Packages" packages="org.bouncycastle.pqc.crypto*:org.bouncycastle.pqc.asn1" />
                 <group title="Post-Quantum Math Packages" packages="org.bouncycastle.pqc.math*" />
                 <group title="Lightweight Crypto Packages" packages="org.bouncycastle.crypto*" />
                 <group title="ASN.1 Support Packages" packages="org.bouncycastle.asn1*" />

@@ -697,6 +697,7 @@
                 <group title="ASN.1 Support Packages" packages="org.bouncycastle.asn1*" />
                 <group title="Lightweight Crypto Packages" packages="org.bouncycastle.crypto*" />
                 <group title="Post-Quantum Lightweight Crypto Packages" packages="org.bouncycastle.pqc.crypto*" />
+                <group title="Post-Quantum ASN.1 Packages" packages="org.bouncycastle.pqc.asn1*" />
                 <group title="Post-Quantum Lightweight Math Packages" packages="org.bouncycastle.pqc.math*" />
                 <group title="Utility Packages" packages="org.bouncycastle.util*:org.bouncycastle.math*" />
                 <group title="JCE Provider and Test Classes" packages="org.bouncycastle.jce.provider*" />
