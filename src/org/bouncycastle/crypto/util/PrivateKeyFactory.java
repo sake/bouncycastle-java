@@ -22,6 +22,7 @@ import org.bouncycastle.asn1.sec.SECNamedCurves;
 import org.bouncycastle.asn1.teletrust.TeleTrusTNamedCurves;
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
 import org.bouncycastle.asn1.x509.DSAParameter;
+import org.bouncycastle.asn1.x9.ECNamedCurveTable;
 import org.bouncycastle.asn1.x9.X962NamedCurves;
 import org.bouncycastle.asn1.x9.X962Parameters;
 import org.bouncycastle.asn1.x9.X9ECParameters;
@@ -130,22 +131,7 @@ public class PrivateKeyFactory
             if (params.isNamedCurve())
             {
                 ASN1ObjectIdentifier oid = ASN1ObjectIdentifier.getInstance(params.getParameters());
-                x9 = X962NamedCurves.getByOID(oid);
-
-                if (x9 == null)
-                {
-                    x9 = SECNamedCurves.getByOID(oid);
-
-                    if (x9 == null)
-                    {
-                        x9 = NISTNamedCurves.getByOID(oid);
-
-                        if (x9 == null)
-                        {
-                            x9 = TeleTrusTNamedCurves.getByOID(oid);
-                        }
-                    }
-                }
+                x9 = ECNamedCurveTable.getByOID(oid);
             }
             else
             {

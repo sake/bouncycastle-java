@@ -12,11 +12,11 @@ import java.util.Vector;
 
 import org.bouncycastle.crypto.prng.ThreadedSeedGenerator;
 import org.bouncycastle.util.Arrays;
+import org.bouncycastle.util.io.Streams;
 
 public class TlsClientProtocol
     extends TlsProtocol
 {
-
     protected TlsClient tlsClient = null;
     protected TlsClientContextImpl tlsClientContext = null;
 
@@ -29,6 +29,7 @@ public class TlsClientProtocol
 
     protected TlsKeyExchange keyExchange = null;
     protected TlsAuthentication authentication = null;
+    protected CertificateStatus certificateStatus = null;
     protected CertificateRequest certificateRequest = null;
 
     private static SecureRandom createSecureRandom()
@@ -107,7 +108,6 @@ public class TlsClientProtocol
     protected void handleChangeCipherSpecMessage()
         throws IOException
     {
-
         switch (this.connection_state)
         {
         case CS_CLIENT_FINISHED:
@@ -154,6 +154,12 @@ public class TlsClientProtocol
 
                 assertEmpty(buf);
 
+                // TODO[RFC 3546] Check whether empty certificates is possible, allowed, or excludes CertificateStatus
+                if (serverCertificate == null || serverCertificate.isEmpty())
+                {
+                    this.allowCertificateStatus = false;
+                }
+
                 this.keyExchange.processServerCertificate(serverCertificate);
 
                 this.authentication = tlsClient.getAuthentication();
@@ -168,6 +174,32 @@ public class TlsClientProtocol
             this.connection_state = CS_SERVER_CERTIFICATE;
             break;
         }
+        case HandshakeType.certificate_status:
+            switch (this.connection_state)
+            {
+            case CS_SERVER_CERTIFICATE:
+                if (!this.allowCertificateStatus)
+                {
+                    /*
+                     * RFC 3546 3.6. If a server returns a "CertificateStatus" message, then the
+                     * server MUST have included an extension of type "status_request" with empty
+                     * "extension_data" in the extended server hello..
+                     */
+                    this.failWithError(AlertLevel.fatal, AlertDescription.unexpected_message);
+                }
+
+                this.certificateStatus = CertificateStatus.parse(buf);
+
+                assertEmpty(buf);
+
+                // TODO[RFC 3546] Figure out how to provide this to the client/authentication.
+
+                this.connection_state = CS_CERTIFICATE_STATUS;
+                break;
+            default:
+                this.failWithError(AlertLevel.fatal, AlertDescription.unexpected_message);
+            }
+            break;
         case HandshakeType.finished:
             switch (this.connection_state)
             {
@@ -186,7 +218,7 @@ public class TlsClientProtocol
                 receiveServerHelloMessage(buf);
                 this.connection_state = CS_SERVER_HELLO;
 
-                securityParameters.prfAlgorithm = getPRFAlgorithm(selectedCipherSuite);
+                securityParameters.prfAlgorithm = getPRFAlgorithm(getContext(), selectedCipherSuite);
                 securityParameters.compressionAlgorithm = this.selectedCompressionMethod;
 
                 /*
@@ -233,6 +265,7 @@ public class TlsClientProtocol
                 // NB: Fall through to next case label
             }
             case CS_SERVER_CERTIFICATE:
+            case CS_CERTIFICATE_STATUS:
 
                 // There was no server key exchange message; check it's OK
                 this.keyExchange.skipServerKeyExchange();
@@ -342,6 +375,7 @@ public class TlsClientProtocol
                 // NB: Fall through to next case label
             }
             case CS_SERVER_CERTIFICATE:
+            case CS_CERTIFICATE_STATUS:
 
                 this.keyExchange.processServerKeyExchange(buf);
 
@@ -360,6 +394,7 @@ public class TlsClientProtocol
             switch (this.connection_state)
             {
             case CS_SERVER_CERTIFICATE:
+            case CS_CERTIFICATE_STATUS:
 
                 // There was no server key exchange message; check it's OK
                 this.keyExchange.skipServerKeyExchange();
@@ -442,7 +477,6 @@ public class TlsClientProtocol
     protected void handleSupplementalData(Vector serverSupplementalData)
         throws IOException
     {
-
         this.tlsClient.processServerSupplementalData(serverSupplementalData);
         this.connection_state = CS_SERVER_SUPPLEMENTAL_DATA;
 
@@ -453,7 +487,6 @@ public class TlsClientProtocol
     protected void receiveNewSessionTicketMessage(ByteArrayInputStream buf)
         throws IOException
     {
-
         NewSessionTicket newSessionTicket = NewSessionTicket.parse(buf);
 
         TlsProtocol.assertEmpty(buf);
@@ -464,7 +497,6 @@ public class TlsClientProtocol
     protected void receiveServerHelloMessage(ByteArrayInputStream buf)
         throws IOException
     {
-
         ProtocolVersion server_version = TlsUtils.readVersion(buf);
         if (server_version.isDTLS())
         {
@@ -605,6 +637,8 @@ public class TlsClientProtocol
                 }
             }
 
+            // TODO[RFC 3546] Should this code check that the 'extension_data' is empty?
+            this.allowCertificateStatus = serverExtensions.containsKey(TlsExtensionsUtils.EXT_status_request);
             this.expectSessionTicket = serverExtensions.containsKey(EXT_SessionTicket);
         }
 
@@ -635,7 +669,6 @@ public class TlsClientProtocol
     protected void sendClientHelloMessage()
         throws IOException
     {
-
         recordStream.setWriteVersion(this.tlsClient.getClientHelloRecordLayerVersion());
 
         ByteArrayOutputStream buf = new ByteArrayOutputStream();

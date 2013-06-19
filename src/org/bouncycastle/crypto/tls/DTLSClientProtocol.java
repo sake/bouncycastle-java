@@ -13,7 +13,6 @@ import org.bouncycastle.util.Arrays;
 public class DTLSClientProtocol
     extends DTLSProtocol
 {
-
     public DTLSClientProtocol(SecureRandom secureRandom)
     {
         super(secureRandom);
@@ -22,7 +21,6 @@ public class DTLSClientProtocol
     public DTLSTransport connect(TlsClient client, DatagramTransport transport)
         throws IOException
     {
-
         if (client == null)
         {
             throw new IllegalArgumentException("'client' cannot be null");
@@ -67,7 +65,6 @@ public class DTLSClientProtocol
     protected DTLSTransport clientHandshake(ClientHandshakeState state, DTLSRecordLayer recordLayer)
         throws IOException
     {
-
         SecurityParameters securityParameters = state.clientContext.getSecurityParameters();
         DTLSReliableHandshake handshake = new DTLSReliableHandshake(state.clientContext, recordLayer);
 
@@ -111,7 +108,7 @@ public class DTLSClientProtocol
             throw new TlsFatalAlert(AlertDescription.unexpected_message);
         }
 
-        securityParameters.prfAlgorithm = TlsProtocol.getPRFAlgorithm(state.selectedCipherSuite);
+        securityParameters.prfAlgorithm = TlsProtocol.getPRFAlgorithm(state.clientContext, state.selectedCipherSuite);
         securityParameters.compressionAlgorithm = state.selectedCompressionMethod;
 
         /*
@@ -135,15 +132,33 @@ public class DTLSClientProtocol
         state.keyExchange = state.client.getKeyExchange();
         state.keyExchange.init(state.clientContext);
 
+        Certificate serverCertificate = null;
+
         if (serverMessage.getType() == HandshakeType.certificate)
         {
-            processServerCertificate(state, serverMessage.getBody());
+            serverCertificate = processServerCertificate(state, serverMessage.getBody());
             serverMessage = handshake.receiveMessage();
         }
         else
         {
             // Okay, Certificate is optional
             state.keyExchange.skipServerCredentials();
+        }
+
+        // TODO[RFC 3546] Check whether empty certificates is possible, allowed, or excludes CertificateStatus
+        if (serverCertificate == null || serverCertificate.isEmpty())
+        {
+            state.allowCertificateStatus = false;
+        }
+
+        if (serverMessage.getType() == HandshakeType.certificate_status)
+        {
+            processCertificateStatus(state, serverMessage.getBody());
+            serverMessage = handshake.receiveMessage();
+        }
+        else
+        {
+            // Okay, CertificateStatus is optional
         }
 
         if (serverMessage.getType() == HandshakeType.server_key_exchange)
@@ -281,7 +296,6 @@ public class DTLSClientProtocol
     protected byte[] generateCertificateVerify(ClientHandshakeState state, byte[] signature)
         throws IOException
     {
-
         ByteArrayOutputStream buf = new ByteArrayOutputStream();
         TlsUtils.writeOpaque16(signature, buf);
         return buf.toByteArray();
@@ -290,7 +304,6 @@ public class DTLSClientProtocol
     protected byte[] generateClientHello(ClientHandshakeState state, TlsClient client)
         throws IOException
     {
-
         ByteArrayOutputStream buf = new ByteArrayOutputStream();
 
         ProtocolVersion client_version = client.getClientVersion();
@@ -364,7 +377,6 @@ public class DTLSClientProtocol
     protected byte[] generateClientKeyExchange(ClientHandshakeState state)
         throws IOException
     {
-
         ByteArrayOutputStream buf = new ByteArrayOutputStream();
         state.keyExchange.generateClientKeyExchange(buf);
         return buf.toByteArray();
@@ -373,7 +385,6 @@ public class DTLSClientProtocol
     protected void processCertificateRequest(ClientHandshakeState state, byte[] body)
         throws IOException
     {
-
         if (state.authentication == null)
         {
             /*
@@ -392,10 +403,31 @@ public class DTLSClientProtocol
         state.keyExchange.validateCertificateRequest(state.certificateRequest);
     }
 
+    protected void processCertificateStatus(ClientHandshakeState state, byte[] body)
+        throws IOException
+    {
+        if (!state.allowCertificateStatus)
+        {
+            /*
+             * RFC 3546 3.6. If a server returns a "CertificateStatus" message, then the
+             * server MUST have included an extension of type "status_request" with empty
+             * "extension_data" in the extended server hello..
+             */
+            throw new TlsFatalAlert(AlertDescription.unexpected_message);
+        }
+
+        ByteArrayInputStream buf = new ByteArrayInputStream(body);
+
+        state.certificateStatus = CertificateStatus.parse(buf);
+
+        TlsProtocol.assertEmpty(buf);
+
+        // TODO[RFC 3546] Figure out how to provide this to the client/authentication.
+    }
+
     protected void processNewSessionTicket(ClientHandshakeState state, byte[] body)
         throws IOException
     {
-
         ByteArrayInputStream buf = new ByteArrayInputStream(body);
 
         NewSessionTicket newSessionTicket = NewSessionTicket.parse(buf);
@@ -405,10 +437,9 @@ public class DTLSClientProtocol
         state.client.notifyNewSessionTicket(newSessionTicket);
     }
 
-    protected void processServerCertificate(ClientHandshakeState state, byte[] body)
+    protected Certificate processServerCertificate(ClientHandshakeState state, byte[] body)
         throws IOException
     {
-
         ByteArrayInputStream buf = new ByteArrayInputStream(body);
 
         Certificate serverCertificate = Certificate.parse(buf);
@@ -418,12 +449,13 @@ public class DTLSClientProtocol
         state.keyExchange.processServerCertificate(serverCertificate);
         state.authentication = state.client.getAuthentication();
         state.authentication.notifyServerCertificate(serverCertificate);
+
+        return serverCertificate;
     }
 
     protected void processServerHello(ClientHandshakeState state, byte[] body)
         throws IOException
     {
-
         SecurityParameters securityParameters = state.clientContext.getSecurityParameters();
 
         ByteArrayInputStream buf = new ByteArrayInputStream(body);
@@ -543,6 +575,8 @@ public class DTLSClientProtocol
                 }
             }
 
+            // TODO[RFC 3546] Should this code check that the 'extension_data' is empty?
+            state.allowCertificateStatus = serverExtensions.containsKey(TlsExtensionsUtils.EXT_status_request);
             state.expectSessionTicket = serverExtensions.containsKey(TlsProtocol.EXT_SessionTicket);
         }
 
@@ -557,7 +591,6 @@ public class DTLSClientProtocol
     protected void processServerKeyExchange(ClientHandshakeState state, byte[] body)
         throws IOException
     {
-
         ByteArrayInputStream buf = new ByteArrayInputStream(body);
 
         state.keyExchange.processServerKeyExchange(buf);
@@ -568,7 +601,6 @@ public class DTLSClientProtocol
     protected void processServerSupplementalData(ClientHandshakeState state, byte[] body)
         throws IOException
     {
-
         ByteArrayInputStream buf = new ByteArrayInputStream(body);
         Vector serverSupplementalData = TlsProtocol.readSupplementalDataMessage(buf);
         state.client.processServerSupplementalData(serverSupplementalData);
@@ -577,7 +609,6 @@ public class DTLSClientProtocol
     protected static byte[] parseHelloVerifyRequest(TlsContext context, byte[] body)
         throws IOException
     {
-
         ByteArrayInputStream buf = new ByteArrayInputStream(body);
 
         ProtocolVersion server_version = TlsUtils.readVersion(buf);
@@ -598,7 +629,6 @@ public class DTLSClientProtocol
     protected static byte[] patchClientHelloWithCookie(byte[] clientHelloBody, byte[] cookie)
         throws IOException
     {
-
         int sessionIDPos = 34;
         int sessionIDLength = TlsUtils.readUint8(clientHelloBody, sessionIDPos);
 
@@ -625,9 +655,11 @@ public class DTLSClientProtocol
         int selectedCipherSuite = -1;
         short selectedCompressionMethod = -1;
         boolean secure_renegotiation = false;
+        boolean allowCertificateStatus = false;
         boolean expectSessionTicket = false;
         TlsKeyExchange keyExchange = null;
         TlsAuthentication authentication = null;
+        CertificateStatus certificateStatus = null;
         CertificateRequest certificateRequest = null;
         TlsCredentials clientCredentials = null;
     }

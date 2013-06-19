@@ -6,6 +6,7 @@ import org.bouncycastle.i18n.LocalizedMessage;
 import org.bouncycastle.i18n.MissingEntryException;
 import org.bouncycastle.i18n.filter.HTMLFilter;
 import org.bouncycastle.i18n.filter.TrustedInput;
+import org.bouncycastle.util.encoders.Hex;
 
 import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
@@ -61,17 +62,19 @@ public class LocalizedMessageTest extends TestCase
         msg = new LocalizedMessage(TEST_RESOURCE, timeTestId, args);
         assertEquals("It's 1:12:00 PM GMT at Aug 17, 2006.", msg.getEntry(
                 "text", Locale.ENGLISH, TimeZone.getTimeZone("GMT")));
-        assertEquals("Es ist 13.12 Uhr GMT am 17.08.2006.", msg.getEntry(
-                "text", Locale.GERMAN, TimeZone.getTimeZone("GMT")));
-        
+        // NOTE: Older JDKs appear to use '.' as the time separator for German locale
+        assertEquals("Es ist 13:12 Uhr GMT am 17.08.2006.", msg.getEntry(
+                "text", Locale.GERMAN, TimeZone.getTimeZone("GMT")).replace("13.12", "13:12"));
+
         // test time with filter
         args = new Object[] { new TrustedInput(testDate) };
         msg = new LocalizedMessage(TEST_RESOURCE, timeTestId, args);
         msg.setFilter(new HTMLFilter());
         assertEquals("It's 1:12:00 PM GMT at Aug 17, 2006.", msg.getEntry(
                 "text", Locale.ENGLISH, TimeZone.getTimeZone("GMT")));
-        assertEquals("Es ist 13.12 Uhr GMT am 17.08.2006.", msg.getEntry(
-                "text", Locale.GERMAN, TimeZone.getTimeZone("GMT")));
+        // NOTE: Older JDKs appear to use '.' as the time separator for German locale
+        assertEquals("Es ist 13:12 Uhr GMT am 17.08.2006.", msg.getEntry(
+                "text", Locale.GERMAN, TimeZone.getTimeZone("GMT")).replace("13.12", "13:12"));
         
         // test number
         args = new Object[] { new TrustedInput(new Float(0.2))  };
@@ -97,7 +100,7 @@ public class LocalizedMessageTest extends TestCase
         }
         catch (MissingEntryException e)
         {
-            System.out.println(e.getDebugMsg());
+//            System.out.println(e.getDebugMsg());
         }
         
         // test missing entry
@@ -114,7 +117,7 @@ public class LocalizedMessageTest extends TestCase
             }
             catch (MissingEntryException e)
             {
-                System.out.println(e.getDebugMsg());
+//                System.out.println(e.getDebugMsg());
             }
         }
         catch (MalformedURLException e)
@@ -125,8 +128,10 @@ public class LocalizedMessageTest extends TestCase
         // test utf8
         try
         {
+//            String expectedUtf8 = "some umlauts äöüèéà";
+            String expectedUtf8 = new String(Hex.decode("736f6d6520756d6c6175747320c3a4c3b6c3bcc3a8c3a9c3a0"), "UTF-8");
             msg = new LocalizedMessage(UTF8_TEST_RESOURCE, utf8TestId, "UTF-8");
-            assertEquals("some umlauts äöüèéà", msg.getEntry("text", Locale.GERMAN, TimeZone.getDefault()));
+            assertEquals(expectedUtf8, msg.getEntry("text", Locale.GERMAN, TimeZone.getDefault()));
         }
         catch (UnsupportedEncodingException e)
         {

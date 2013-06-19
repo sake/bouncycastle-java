@@ -15,7 +15,6 @@ import org.bouncycastle.util.Arrays;
 public class DTLSServerProtocol
     extends DTLSProtocol
 {
-
     protected boolean verifyRequests = true;
 
     public DTLSServerProtocol(SecureRandom secureRandom)
@@ -36,7 +35,6 @@ public class DTLSServerProtocol
     public DTLSTransport accept(TlsServer server, DatagramTransport transport)
         throws IOException
     {
-
         if (server == null)
         {
             throw new IllegalArgumentException("'server' cannot be null");
@@ -83,7 +81,6 @@ public class DTLSServerProtocol
     public DTLSTransport serverHandshake(ServerHandshakeState state, DTLSRecordLayer recordLayer)
         throws IOException
     {
-
         SecurityParameters securityParameters = state.serverContext.getSecurityParameters();
         DTLSReliableHandshake handshake = new DTLSReliableHandshake(state.serverContext, recordLayer);
 
@@ -110,7 +107,7 @@ public class DTLSServerProtocol
 
         // TODO This block could really be done before actually sending the hello
         {
-            securityParameters.prfAlgorithm = TlsProtocol.getPRFAlgorithm(state.selectedCipherSuite);
+            securityParameters.prfAlgorithm = TlsProtocol.getPRFAlgorithm(state.serverContext, state.selectedCipherSuite);
             securityParameters.compressionAlgorithm = state.selectedCompressionMethod;
 
             /*
@@ -133,6 +130,9 @@ public class DTLSServerProtocol
         state.keyExchange.init(state.serverContext);
 
         state.serverCredentials = state.server.getCredentials();
+
+        Certificate serverCertificate = null;
+
         if (state.serverCredentials == null)
         {
             state.keyExchange.skipServerCredentials();
@@ -141,8 +141,25 @@ public class DTLSServerProtocol
         {
             state.keyExchange.processServerCredentials(state.serverCredentials);
 
-            byte[] certificateBody = generateCertificate(state.serverCredentials.getCertificate());
+            serverCertificate = state.serverCredentials.getCertificate();
+            byte[] certificateBody = generateCertificate(serverCertificate);
             handshake.sendMessage(HandshakeType.certificate, certificateBody);
+        }
+
+        // TODO[RFC 3546] Check whether empty certificates is possible, allowed, or excludes CertificateStatus
+        if (serverCertificate == null || serverCertificate.isEmpty())
+        {
+            state.allowCertificateStatus = false;
+        }
+
+        if (state.allowCertificateStatus)
+        {
+            CertificateStatus certificateStatus = state.server.getCertificateStatus();
+            if (certificateStatus != null)
+            {
+                byte[] certificateStatusBody = generateCertificateStatus(state, certificateStatus);
+                handshake.sendMessage(HandshakeType.certificate_status, certificateStatusBody);
+            }
         }
 
         byte[] serverKeyExchange = state.keyExchange.generateServerKeyExchange();
@@ -275,16 +292,22 @@ public class DTLSServerProtocol
     protected byte[] generateCertificateRequest(ServerHandshakeState state, CertificateRequest certificateRequest)
         throws IOException
     {
-
         ByteArrayOutputStream buf = new ByteArrayOutputStream();
         certificateRequest.encode(buf);
+        return buf.toByteArray();
+    }
+
+    protected byte[] generateCertificateStatus(ServerHandshakeState state, CertificateStatus certificateStatus)
+        throws IOException
+    {
+        ByteArrayOutputStream buf = new ByteArrayOutputStream();
+        certificateStatus.encode(buf);
         return buf.toByteArray();
     }
 
     protected byte[] generateNewSessionTicket(ServerHandshakeState state, NewSessionTicket newSessionTicket)
         throws IOException
     {
-
         ByteArrayOutputStream buf = new ByteArrayOutputStream();
         newSessionTicket.encode(buf);
         return buf.toByteArray();
@@ -293,7 +316,6 @@ public class DTLSServerProtocol
     protected byte[] generateServerHello(ServerHandshakeState state)
         throws IOException
     {
-
         ByteArrayOutputStream buf = new ByteArrayOutputStream();
 
         ProtocolVersion server_version = state.server.getServerVersion();
@@ -373,7 +395,10 @@ public class DTLSServerProtocol
 
         if (state.serverExtensions != null)
         {
+            // TODO[RFC 3546] Should this code check that the 'extension_data' is empty?
+            state.allowCertificateStatus = state.serverExtensions.containsKey(TlsExtensionsUtils.EXT_status_request);
             state.expectSessionTicket = state.serverExtensions.containsKey(TlsProtocol.EXT_SessionTicket);
+
             TlsProtocol.writeExtensions(buf, state.serverExtensions);
         }
 
@@ -383,7 +408,6 @@ public class DTLSServerProtocol
     protected void notifyClientCertificate(ServerHandshakeState state, Certificate clientCertificate)
         throws IOException
     {
-
         if (state.certificateRequest == null)
         {
             throw new IllegalStateException();
@@ -429,7 +453,6 @@ public class DTLSServerProtocol
     protected void processClientCertificate(ServerHandshakeState state, byte[] body)
         throws IOException
     {
-
         ByteArrayInputStream buf = new ByteArrayInputStream(body);
 
         Certificate clientCertificate = Certificate.parse(buf);
@@ -442,7 +465,6 @@ public class DTLSServerProtocol
     protected void processCertificateVerify(ServerHandshakeState state, byte[] body, byte[] certificateVerifyHash)
         throws IOException
     {
-
         ByteArrayInputStream buf = new ByteArrayInputStream(body);
 
         byte[] clientCertificateSignature = TlsUtils.readOpaque16(buf);
@@ -470,7 +492,6 @@ public class DTLSServerProtocol
     protected void processClientHello(ServerHandshakeState state, byte[] body)
         throws IOException
     {
-
         ByteArrayInputStream buf = new ByteArrayInputStream(body);
 
         // TODO Read RFCs for guidance on the expected record layer version number
@@ -586,7 +607,6 @@ public class DTLSServerProtocol
     protected void processClientKeyExchange(ServerHandshakeState state, byte[] body)
         throws IOException
     {
-
         ByteArrayInputStream buf = new ByteArrayInputStream(body);
 
         state.keyExchange.processClientKeyExchange(buf);
@@ -599,7 +619,6 @@ public class DTLSServerProtocol
     protected void processClientSupplementalData(ServerHandshakeState state, byte[] body)
         throws IOException
     {
-
         ByteArrayInputStream buf = new ByteArrayInputStream(body);
         Vector clientSupplementalData = TlsProtocol.readSupplementalDataMessage(buf);
         state.server.processClientSupplementalData(clientSupplementalData);
@@ -620,6 +639,7 @@ public class DTLSServerProtocol
         int selectedCipherSuite = -1;
         short selectedCompressionMethod = -1;
         boolean secure_renegotiation = false;
+        boolean allowCertificateStatus = false;
         boolean expectSessionTicket = false;
         Hashtable serverExtensions = null;
         TlsKeyExchange keyExchange = null;

@@ -1,7 +1,5 @@
 package org.bouncycastle.crypto.prng.test;
 
-import java.util.Random;
-
 import org.bouncycastle.crypto.digests.SHA1Digest;
 import org.bouncycastle.crypto.digests.SHA256Digest;
 import org.bouncycastle.crypto.digests.SHA384Digest;

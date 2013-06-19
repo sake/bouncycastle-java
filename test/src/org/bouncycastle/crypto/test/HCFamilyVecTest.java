@@ -1,8 +1,8 @@
 package org.bouncycastle.crypto.test;
 
 import java.io.BufferedReader;
-import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.Reader;
 
 import org.bouncycastle.crypto.CipherParameters;
@@ -25,8 +25,6 @@ import org.bouncycastle.util.test.SimpleTest;
 public class HCFamilyVecTest
     extends SimpleTest
 {
-    private static final String TEST_DATA_HOME = "bc.test.data.home";
-
     private static class PeekableLineReader extends BufferedReader
     {
         public PeekableLineReader(Reader r) throws IOException
@@ -53,21 +51,21 @@ public class HCFamilyVecTest
 
     public String getName()
     {
-        return "HC-128 and HC-256";
+        return "HC-128 and HC-256 (ecrypt)";
     }
 
     public void performTest() throws Exception
     {
-        runTests(new HC128Engine(), "hc-128/ecrypt_HC-128.txt");
-        runTests(new HC256Engine(), "hc-256/ecrypt_HC-256_128K_128IV.txt");
-        runTests(new HC256Engine(), "hc-256/ecrypt_HC-256_256K_128IV.txt");
-        runTests(new HC256Engine(), "hc-256/ecrypt_HC-256_128K_256IV.txt");
-        runTests(new HC256Engine(), "hc-256/ecrypt_HC-256_256K_256IV.txt");
+        runTests(new HC128Engine(), "ecrypt_HC-128.txt");
+        runTests(new HC256Engine(), "ecrypt_HC-256_128K_128IV.txt");
+        runTests(new HC256Engine(), "ecrypt_HC-256_256K_128IV.txt");
+        runTests(new HC256Engine(), "ecrypt_HC-256_128K_256IV.txt");
+        runTests(new HC256Engine(), "ecrypt_HC-256_256K_256IV.txt");
     }
 
     private void runTests(StreamCipher hc, String fileName) throws IOException
     {
-        Reader resource = new FileReader(getDataHome() + "/" + fileName);
+        Reader resource = new InputStreamReader(getClass().getResourceAsStream(fileName));
         PeekableLineReader r = new PeekableLineReader(resource);
         runAllVectors(hc, fileName, r);
     }
@@ -192,18 +190,6 @@ public class HCFamilyVecTest
         {
             digest[i] ^= block[i];
         }
-    }
-
-    private static String getDataHome()
-    {
-        String dataHome = System.getProperty(TEST_DATA_HOME);
-
-        if (dataHome == null)
-        {
-            throw new IllegalStateException(TEST_DATA_HOME + " property not set");
-        }
-
-        return dataHome + "/hc-256";
     }
 
     public static void main(String[] args)

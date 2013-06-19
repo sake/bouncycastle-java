@@ -27,6 +27,7 @@ import org.bouncycastle.asn1.x509.X509ObjectIdentifiers;
 import org.bouncycastle.asn1.x9.DHDomainParameters;
 import org.bouncycastle.asn1.x9.DHPublicKey;
 import org.bouncycastle.asn1.x9.DHValidationParms;
+import org.bouncycastle.asn1.x9.ECNamedCurveTable;
 import org.bouncycastle.asn1.x9.X962NamedCurves;
 import org.bouncycastle.asn1.x9.X962Parameters;
 import org.bouncycastle.asn1.x9.X9ECParameters;
@@ -160,29 +161,13 @@ public class PublicKeyFactory
         }
         else if (algId.getAlgorithm().equals(X9ObjectIdentifiers.id_ecPublicKey))
         {
-            X962Parameters params = new X962Parameters(
-                (ASN1Primitive)algId.getParameters());
+            X962Parameters params = X962Parameters.getInstance(algId.getParameters());
 
             X9ECParameters x9;
             if (params.isNamedCurve())
             {
                 ASN1ObjectIdentifier oid = (ASN1ObjectIdentifier)params.getParameters();
-                x9 = X962NamedCurves.getByOID(oid);
-
-                if (x9 == null)
-                {
-                    x9 = SECNamedCurves.getByOID(oid);
-
-                    if (x9 == null)
-                    {
-                        x9 = NISTNamedCurves.getByOID(oid);
-
-                        if (x9 == null)
-                        {
-                            x9 = TeleTrusTNamedCurves.getByOID(oid);
-                        }
-                    }
-                }
+                x9 = ECNamedCurveTable.getByOID(oid);
             }
             else
             {
