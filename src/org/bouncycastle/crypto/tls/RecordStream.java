@@ -136,10 +136,17 @@ class RecordStream
         pendingCipher = null;
     }
 
-    public void readRecord()
+    public boolean readRecord()
         throws IOException
     {
-        short type = TlsUtils.readUint8(input);
+//        short type = TlsUtils.readUint8(input);
+        int i = input.read();
+        if (i < 0)
+        {
+            return false;
+        }
+
+        short type = (short)i;
 
         // TODO In earlier RFCs, it was "SHOULD ignore"; should this be version-dependent?
         /*
@@ -172,6 +179,7 @@ class RecordStream
         int length = TlsUtils.readUint16(input);
         byte[] plaintext = decodeAndVerify(type, input, length);
         handler.processRecord(type, plaintext, 0, plaintext.length);
+        return true;
     }
 
     protected byte[] decodeAndVerify(short type, InputStream input, int len)
@@ -202,6 +210,15 @@ class RecordStream
          * decompression failure error.
          */
         checkLength(decoded.length, plaintextLimit, AlertDescription.decompression_failure);
+
+        /*
+         * RFC 5264 6.2.1 Implementations MUST NOT send zero-length fragments of Handshake, Alert,
+         * or ChangeCipherSpec content types.
+         */
+        if (decoded.length < 1 && type != ContentType.application_data)
+        {
+            throw new TlsFatalAlert(AlertDescription.illegal_parameter);
+        }
 
         return decoded;
     }

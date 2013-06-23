@@ -32,6 +32,11 @@ public abstract class AbstractTlsClient
         this.context = context;
     }
 
+    public TlsSession getSessionToResume()
+    {
+        return null;
+    }
+
     /**
      * RFC 5246 E.1. "TLS clients that wish to negotiate with older servers MAY send any value
      * {03,XX} as the record layer version number. Typical values would be {03,00}, the lowest
@@ -204,11 +209,6 @@ public abstract class AbstractTlsClient
     }
 
     public void notifyNewSessionTicket(NewSessionTicket newSessionTicket)
-        throws IOException
-    {
-    }
-
-    public void notifyHandshakeComplete()
         throws IOException
     {
     }

@@ -22,11 +22,11 @@ public class TlsClientProtocol
     protected short[] offeredCompressionMethods = null;
     protected Hashtable clientExtensions = null;
 
-    protected int selectedCipherSuite;
-    protected short selectedCompressionMethod;
+    protected byte[] selectedSessionID = null;
 
     protected TlsKeyExchange keyExchange = null;
     protected TlsAuthentication authentication = null;
+
     protected CertificateStatus certificateStatus = null;
     protected CertificateRequest certificateRequest = null;
 
@@ -60,11 +60,10 @@ public class TlsClientProtocol
     /**
      * Initiates a TLS handshake in the role of client
      *
-     * @param tlsClient
+     * @param tlsClient The {@link TlsClient} to use for the handshake.
      * @throws IOException If handshake was not successful.
      */
-    public void connect(TlsClient tlsClient)
-        throws IOException
+    public void connect(TlsClient tlsClient) throws IOException
     {
         if (tlsClient == null)
         {
@@ -72,7 +71,7 @@ public class TlsClientProtocol
         }
         if (this.tlsClient != null)
         {
-            throw new IllegalStateException("connect can only be called once");
+            throw new IllegalStateException("'connect' can only be called once");
         }
 
         this.tlsClient = tlsClient;
@@ -85,12 +84,35 @@ public class TlsClientProtocol
         this.tlsClient.init(tlsClientContext);
         this.recordStream.init(tlsClientContext);
 
+        TlsSession sessionToResume = tlsClient.getSessionToResume();
+        if (sessionToResume != null)
+        {
+            SessionParameters sessionParameters = sessionToResume.exportSessionParameters();
+            if (sessionParameters != null)
+            {
+                this.tlsSession = sessionToResume;
+                this.sessionParameters = sessionParameters;
+            }
+        }
+
         sendClientHelloMessage();
         this.connection_state = CS_CLIENT_HELLO;
 
         completeHandshake();
+    }
 
-        this.tlsClient.notifyHandshakeComplete();
+    protected void cleanupHandshake()
+    {
+        super.cleanupHandshake();
+
+        this.offeredCipherSuites = null;
+        this.offeredCompressionMethods = null;
+        this.clientExtensions = null;
+        this.selectedSessionID = null;
+        this.keyExchange = null;
+        this.authentication = null;
+        this.certificateStatus = null;
+        this.certificateRequest = null;
     }
 
     protected AbstractTlsContext getContext()
@@ -103,35 +125,27 @@ public class TlsClientProtocol
         return tlsClient;
     }
 
-    protected void handleChangeCipherSpecMessage()
-        throws IOException
-    {
-        switch (this.connection_state)
-        {
-        case CS_CLIENT_FINISHED:
-        {
-            if (this.expectSessionTicket)
-            {
-                /*
-                 * RFC 5077 3.3. This message MUST be sent if the server included a SessionTicket
-                 * extension in the ServerHello.
-                 */
-                this.failWithError(AlertLevel.fatal, AlertDescription.handshake_failure);
-            }
-            // NB: Fall through to next case label
-        }
-        case CS_SERVER_SESSION_TICKET:
-            this.connection_state = CS_SERVER_CHANGE_CIPHER_SPEC;
-            break;
-        default:
-            this.failWithError(AlertLevel.fatal, AlertDescription.handshake_failure);
-        }
-    }
-
     protected void handleHandshakeMessage(short type, byte[] data)
         throws IOException
     {
         ByteArrayInputStream buf = new ByteArrayInputStream(data);
+
+        if (this.resumedSession)
+        {
+            if (type != HandshakeType.finished || this.connection_state != CS_SERVER_HELLO)
+            {
+                throw new TlsFatalAlert(AlertDescription.unexpected_message);
+            }
+
+            processFinishedMessage(buf);
+            this.connection_state = CS_SERVER_FINISHED;
+
+            sendFinishedMessage();
+            this.connection_state = CS_CLIENT_FINISHED;
+            this.connection_state = CS_END;
+
+            return;
+        }
 
         switch (type)
         {
@@ -148,25 +162,25 @@ public class TlsClientProtocol
             {
                 // Parse the Certificate message and send to cipher suite
 
-                Certificate serverCertificate = Certificate.parse(buf);
+                this.peerCertificate = Certificate.parse(buf);
 
                 assertEmpty(buf);
 
                 // TODO[RFC 3546] Check whether empty certificates is possible, allowed, or excludes CertificateStatus
-                if (serverCertificate == null || serverCertificate.isEmpty())
+                if (this.peerCertificate == null || this.peerCertificate.isEmpty())
                 {
                     this.allowCertificateStatus = false;
                 }
 
-                this.keyExchange.processServerCertificate(serverCertificate);
+                this.keyExchange.processServerCertificate(this.peerCertificate);
 
                 this.authentication = tlsClient.getAuthentication();
-                this.authentication.notifyServerCertificate(serverCertificate);
+                this.authentication.notifyServerCertificate(this.peerCertificate);
 
                 break;
             }
             default:
-                this.failWithError(AlertLevel.fatal, AlertDescription.unexpected_message);
+                throw new TlsFatalAlert(AlertDescription.unexpected_message);
             }
 
             this.connection_state = CS_SERVER_CERTIFICATE;
@@ -183,7 +197,7 @@ public class TlsClientProtocol
                      * server MUST have included an extension of type "status_request" with empty
                      * "extension_data" in the extended server hello..
                      */
-                    this.failWithError(AlertLevel.fatal, AlertDescription.unexpected_message);
+                    throw new TlsFatalAlert(AlertDescription.unexpected_message);
                 }
 
                 this.certificateStatus = CertificateStatus.parse(buf);
@@ -195,18 +209,19 @@ public class TlsClientProtocol
                 this.connection_state = CS_CERTIFICATE_STATUS;
                 break;
             default:
-                this.failWithError(AlertLevel.fatal, AlertDescription.unexpected_message);
+                throw new TlsFatalAlert(AlertDescription.unexpected_message);
             }
             break;
         case HandshakeType.finished:
             switch (this.connection_state)
             {
-            case CS_SERVER_CHANGE_CIPHER_SPEC:
+            case CS_CLIENT_FINISHED:
                 processFinishedMessage(buf);
                 this.connection_state = CS_SERVER_FINISHED;
+                this.connection_state = CS_END;
                 break;
             default:
-                this.failWithError(AlertLevel.fatal, AlertDescription.unexpected_message);
+                throw new TlsFatalAlert(AlertDescription.unexpected_message);
             }
             break;
         case HandshakeType.server_hello:
@@ -216,8 +231,7 @@ public class TlsClientProtocol
                 receiveServerHelloMessage(buf);
                 this.connection_state = CS_SERVER_HELLO;
 
-                securityParameters.prfAlgorithm = getPRFAlgorithm(getContext(), selectedCipherSuite);
-                securityParameters.compressionAlgorithm = this.selectedCompressionMethod;
+                securityParameters.prfAlgorithm = getPRFAlgorithm(getContext(), securityParameters.getCipherSuite());
 
                 /*
                  * RFC 5264 7.4.9. Any cipher suite which does not explicitly specify
@@ -228,9 +242,35 @@ public class TlsClientProtocol
 
                 recordStream.notifyHelloComplete();
 
+                this.resumedSession = this.selectedSessionID.length > 0 && this.tlsSession != null
+                    && Arrays.areEqual(this.selectedSessionID, this.tlsSession.getSessionID());
+
+                if (this.resumedSession)
+                {
+                    if (securityParameters.getCipherSuite() != sessionParameters.getCipherSuite()
+                        || securityParameters.getCompressionAlgorithm() != sessionParameters.getCompressionAlgorithm())
+                    {
+                        throw new TlsFatalAlert(AlertDescription.illegal_parameter);
+                    }
+
+                    securityParameters.masterSecret = Arrays.clone(sessionParameters.getMasterSecret());
+                    recordStream.setPendingConnectionState(getPeer().getCompression(), getPeer().getCipher());
+
+                    sendChangeCipherSpecMessage();
+                }
+                else
+                {
+                    invalidateSession();
+
+                    if (this.selectedSessionID.length > 0)
+                    {
+                        this.tlsSession = new TlsSessionImpl(this.selectedSessionID, null);
+                    }
+                }
+
                 break;
             default:
-                this.failWithError(AlertLevel.fatal, AlertDescription.unexpected_message);
+                throw new TlsFatalAlert(AlertDescription.unexpected_message);
             }
             break;
         case HandshakeType.supplemental_data:
@@ -241,7 +281,7 @@ public class TlsClientProtocol
                 handleSupplementalData(readSupplementalDataMessage(buf));
                 break;
             default:
-                this.failWithError(AlertLevel.fatal, AlertDescription.unexpected_message);
+                throw new TlsFatalAlert(AlertDescription.unexpected_message);
             }
             break;
         }
@@ -320,15 +360,10 @@ public class TlsClientProtocol
                  * in our CipherSuite.
                  */
                 sendClientKeyExchangeMessage();
+                this.connection_state = CS_CLIENT_KEY_EXCHANGE;
 
                 establishMasterSecret(getContext(), keyExchange);
-
-                /*
-                 * Initialize our cipher suite
-                 */
-                recordStream.setPendingConnectionState(tlsClient.getCompression(), tlsClient.getCipher());
-
-                this.connection_state = CS_CLIENT_KEY_EXCHANGE;
+                recordStream.setPendingConnectionState(getPeer().getCompression(), getPeer().getCipher());
 
                 if (clientCreds != null && clientCreds instanceof TlsSignerCredentials)
                 {
@@ -345,13 +380,11 @@ public class TlsClientProtocol
                 }
 
                 sendChangeCipherSpecMessage();
-                this.connection_state = CS_CLIENT_CHANGE_CIPHER_SPEC;
-
                 sendFinishedMessage();
                 this.connection_state = CS_CLIENT_FINISHED;
                 break;
             default:
-                this.failWithError(AlertLevel.fatal, AlertDescription.handshake_failure);
+                throw new TlsFatalAlert(AlertDescription.handshake_failure);
             }
             break;
         case HandshakeType.server_key_exchange:
@@ -381,7 +414,7 @@ public class TlsClientProtocol
                 break;
 
             default:
-                this.failWithError(AlertLevel.fatal, AlertDescription.unexpected_message);
+                throw new TlsFatalAlert(AlertDescription.unexpected_message);
             }
 
             this.connection_state = CS_SERVER_KEY_EXCHANGE;
@@ -407,7 +440,7 @@ public class TlsClientProtocol
                      * RFC 2246 7.4.4. It is a fatal handshake_failure alert for an anonymous server
                      * to request client identification.
                      */
-                    this.failWithError(AlertLevel.fatal, AlertDescription.handshake_failure);
+                    throw new TlsFatalAlert(AlertDescription.handshake_failure);
                 }
 
                 this.certificateRequest = CertificateRequest.parse(getContext(), buf);
@@ -419,7 +452,7 @@ public class TlsClientProtocol
                 break;
             }
             default:
-                this.failWithError(AlertLevel.fatal, AlertDescription.unexpected_message);
+                throw new TlsFatalAlert(AlertDescription.unexpected_message);
             }
 
             this.connection_state = CS_CERTIFICATE_REQUEST;
@@ -436,17 +469,17 @@ public class TlsClientProtocol
                      * RFC 5077 3.3. This message MUST NOT be sent if the server did not include a
                      * SessionTicket extension in the ServerHello.
                      */
-                    this.failWithError(AlertLevel.fatal, AlertDescription.unexpected_message);
+                    throw new TlsFatalAlert(AlertDescription.unexpected_message);
                 }
                 receiveNewSessionTicketMessage(buf);
                 this.connection_state = CS_SERVER_SESSION_TICKET;
                 break;
             default:
-                this.failWithError(AlertLevel.fatal, AlertDescription.unexpected_message);
+                throw new TlsFatalAlert(AlertDescription.unexpected_message);
             }
         }
         case HandshakeType.hello_request:
-
+        {
             assertEmpty(buf);
 
             /*
@@ -455,20 +488,19 @@ public class TlsClientProtocol
              * if it does not wish to renegotiate a session, or the client may, if it wishes,
              * respond with a no_renegotiation alert.
              */
-            if (this.connection_state == CS_SERVER_FINISHED)
+            if (this.connection_state == CS_END)
             {
                 String message = "Renegotiation not supported";
                 raiseWarning(AlertDescription.no_renegotiation, message);
             }
             break;
+        }
+        case HandshakeType.client_hello:
         case HandshakeType.client_key_exchange:
         case HandshakeType.certificate_verify:
-        case HandshakeType.client_hello:
         case HandshakeType.hello_verify_request:
         default:
-            // We do not support this!
-            this.failWithError(AlertLevel.fatal, AlertDescription.unexpected_message);
-            break;
+            throw new TlsFatalAlert(AlertDescription.unexpected_message);
         }
     }
 
@@ -498,19 +530,19 @@ public class TlsClientProtocol
         ProtocolVersion server_version = TlsUtils.readVersion(buf);
         if (server_version.isDTLS())
         {
-            this.failWithError(AlertLevel.fatal, AlertDescription.illegal_parameter);
+            throw new TlsFatalAlert(AlertDescription.illegal_parameter);
         }
 
         // Check that this matches what the server is sending in the record layer
         if (!server_version.equals(recordStream.getReadVersion()))
         {
-            this.failWithError(AlertLevel.fatal, AlertDescription.illegal_parameter);
+            throw new TlsFatalAlert(AlertDescription.illegal_parameter);
         }
 
         ProtocolVersion client_version = getContext().getClientVersion();
         if (!server_version.isEqualOrEarlierVersionOf(client_version))
         {
-            this.failWithError(AlertLevel.fatal, AlertDescription.illegal_parameter);
+            throw new TlsFatalAlert(AlertDescription.illegal_parameter);
         }
 
         this.recordStream.setWriteVersion(server_version);
@@ -522,27 +554,28 @@ public class TlsClientProtocol
          */
         securityParameters.serverRandom = TlsUtils.readFully(32, buf);
 
-        byte[] sessionID = TlsUtils.readOpaque8(buf);
-        if (sessionID.length > 32)
+        this.selectedSessionID = TlsUtils.readOpaque8(buf);
+        if (this.selectedSessionID.length > 32)
         {
-            this.failWithError(AlertLevel.fatal, AlertDescription.illegal_parameter);
+            throw new TlsFatalAlert(AlertDescription.illegal_parameter);
         }
 
-        this.tlsClient.notifySessionID(sessionID);
+        this.tlsClient.notifySessionID(this.selectedSessionID);
 
         /*
          * Find out which CipherSuite the server has chosen and check that it was one of the offered
          * ones.
          */
-        this.selectedCipherSuite = TlsUtils.readUint16(buf);
-        if (!arrayContains(offeredCipherSuites, this.selectedCipherSuite)
-            || this.selectedCipherSuite == CipherSuite.TLS_NULL_WITH_NULL_NULL
-            || this.selectedCipherSuite == CipherSuite.TLS_EMPTY_RENEGOTIATION_INFO_SCSV)
+        int selectedCipherSuite = TlsUtils.readUint16(buf);
+        if (!arrayContains(offeredCipherSuites, selectedCipherSuite)
+            || selectedCipherSuite == CipherSuite.TLS_NULL_WITH_NULL_NULL
+            || selectedCipherSuite == CipherSuite.TLS_EMPTY_RENEGOTIATION_INFO_SCSV)
         {
-            this.failWithError(AlertLevel.fatal, AlertDescription.illegal_parameter);
+            throw new TlsFatalAlert(AlertDescription.illegal_parameter);
         }
 
-        this.tlsClient.notifySelectedCipherSuite(this.selectedCipherSuite);
+        securityParameters.cipherSuite = selectedCipherSuite;
+        this.tlsClient.notifySelectedCipherSuite(selectedCipherSuite);
 
         /*
          * Find out which CompressionMethod the server has chosen and check that it was one of the
@@ -551,9 +584,10 @@ public class TlsClientProtocol
         short selectedCompressionMethod = TlsUtils.readUint8(buf);
         if (!arrayContains(offeredCompressionMethods, selectedCompressionMethod))
         {
-            this.failWithError(AlertLevel.fatal, AlertDescription.illegal_parameter);
+            throw new TlsFatalAlert(AlertDescription.illegal_parameter);
         }
 
+        securityParameters.compressionAlgorithm = selectedCompressionMethod;
         this.tlsClient.notifySelectedCompressionMethod(selectedCompressionMethod);
 
         /*
@@ -605,7 +639,7 @@ public class TlsClientProtocol
                      * the associated ClientHello, it MUST abort the handshake with an
                      * unsupported_extension fatal alert.
                      */
-                    this.failWithError(AlertLevel.fatal, AlertDescription.unsupported_extension);
+                    throw new TlsFatalAlert(AlertDescription.unsupported_extension);
                 }
             }
 
@@ -630,7 +664,7 @@ public class TlsClientProtocol
 
                     if (!Arrays.constantTimeAreEqual(renegExtData, createRenegotiationInfo(TlsUtils.EMPTY_BYTES)))
                     {
-                        this.failWithError(AlertLevel.fatal, AlertDescription.handshake_failure);
+                        throw new TlsFatalAlert(AlertDescription.handshake_failure);
                     }
                 }
             }
@@ -639,10 +673,11 @@ public class TlsClientProtocol
 
             this.securityParameters.truncatedHMac = TlsExtensionsUtils.hasTruncatedHMacExtension(serverExtensions);
 
-            // TODO[RFC 3546] Should this code check that the 'extension_data' is empty?
-            this.allowCertificateStatus = serverExtensions.containsKey(TlsExtensionsUtils.EXT_status_request);
+            this.allowCertificateStatus = TlsUtils.hasExpectedEmptyExtensionData(serverExtensions,
+                TlsExtensionsUtils.EXT_status_request, AlertDescription.illegal_parameter);
 
-            this.expectSessionTicket = serverExtensions.containsKey(EXT_SessionTicket);
+            this.expectSessionTicket = TlsUtils.hasExpectedEmptyExtensionData(serverExtensions,
+                TlsProtocol.EXT_SessionTicket, AlertDescription.illegal_parameter);
         }
 
         tlsClient.notifySecureRenegotiation(this.secure_renegotiation);
@@ -666,31 +701,54 @@ public class TlsClientProtocol
     protected void sendClientHelloMessage()
         throws IOException
     {
-        recordStream.setWriteVersion(this.tlsClient.getClientHelloRecordLayerVersion());
-
-        HandshakeMessage message = new HandshakeMessage(HandshakeType.client_hello);
+        this.recordStream.setWriteVersion(this.tlsClient.getClientHelloRecordLayerVersion());
 
         ProtocolVersion client_version = this.tlsClient.getClientVersion();
         if (client_version.isDTLS())
         {
-            this.failWithError(AlertLevel.fatal, AlertDescription.internal_error);
+            throw new TlsFatalAlert(AlertDescription.internal_error);
         }
 
         getContext().setClientVersion(client_version);
-        TlsUtils.writeVersion(client_version, message);
 
-        message.write(securityParameters.clientRandom);
-
-        // Session id
-        TlsUtils.writeOpaque8(TlsUtils.EMPTY_BYTES, message);
+        // Session ID
+        byte[] session_id = TlsUtils.EMPTY_BYTES;
+        if (this.tlsSession != null)
+        {
+            session_id = this.tlsSession.getSessionID();
+            if (session_id == null || session_id.length > 32)
+            {
+                session_id = TlsUtils.EMPTY_BYTES;
+            }
+        }
 
         /*
          * Cipher suites
          */
         this.offeredCipherSuites = this.tlsClient.getCipherSuites();
 
+        // Compression methods
+        this.offeredCompressionMethods = this.tlsClient.getCompressionMethods();
+
+        if (session_id.length > 0 && this.sessionParameters != null)
+        {
+            if (!arrayContains(this.offeredCipherSuites, sessionParameters.getCipherSuite())
+                || !arrayContains(this.offeredCompressionMethods, sessionParameters.getCompressionAlgorithm()))
+            {
+                session_id = TlsUtils.EMPTY_BYTES;
+            }
+        }
+
         // Integer -> byte[]
         this.clientExtensions = this.tlsClient.getClientExtensions();
+
+        HandshakeMessage message = new HandshakeMessage(HandshakeType.client_hello);
+
+        TlsUtils.writeVersion(client_version, message);
+
+        message.write(this.securityParameters.getClientRandom());
+
+        TlsUtils.writeOpaque8(session_id, message);
 
         // Cipher Suites (and SCSV)
         {
@@ -709,7 +767,9 @@ public class TlsClientProtocol
                 ++count;
             }
 
-            TlsUtils.writeUint16(2 * count, message);
+            int length = 2 * count;
+            TlsUtils.checkUint16(length);
+            TlsUtils.writeUint16(length, message);
             TlsUtils.writeUint16Array(offeredCipherSuites, message);
 
             if (noRenegExt)
@@ -718,10 +778,8 @@ public class TlsClientProtocol
             }
         }
 
-        // Compression methods
-        this.offeredCompressionMethods = this.tlsClient.getCompressionMethods();
-
-        TlsUtils.writeUint8((short)offeredCompressionMethods.length, message);
+        TlsUtils.checkUint8(offeredCompressionMethods.length);
+        TlsUtils.writeUint8(offeredCompressionMethods.length, message);
         TlsUtils.writeUint8Array(offeredCompressionMethods, message);
 
         // Extensions

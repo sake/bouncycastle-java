@@ -79,12 +79,6 @@ public interface TlsServer
     void notifyClientCertificate(Certificate clientCertificate)
         throws IOException;
 
-    TlsCompression getCompression()
-        throws IOException;
-
-    TlsCipher getCipher()
-        throws IOException;
-
     /**
      * RFC 5077 3.3. NewSessionTicket Handshake Message.
      * <p/>
@@ -95,8 +89,5 @@ public interface TlsServer
      * @throws IOException
      */
     NewSessionTicket getNewSessionTicket()
-        throws IOException;
-
-    void notifyHandshakeComplete()
         throws IOException;
 }

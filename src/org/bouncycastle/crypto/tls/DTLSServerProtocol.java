@@ -112,8 +112,9 @@ public class DTLSServerProtocol
 
         // TODO This block could really be done before actually sending the hello
         {
-            securityParameters.prfAlgorithm = TlsProtocol.getPRFAlgorithm(state.serverContext, state.selectedCipherSuite);
+            securityParameters.cipherSuite = state.selectedCipherSuite;
             securityParameters.compressionAlgorithm = state.selectedCompressionMethod;
+            securityParameters.prfAlgorithm = TlsProtocol.getPRFAlgorithm(state.serverContext, state.selectedCipherSuite);
 
             /*
              * RFC 5264 7.4.9. Any cipher suite which does not explicitly specify verify_data_length
@@ -236,6 +237,7 @@ public class DTLSServerProtocol
             throw new TlsFatalAlert(AlertDescription.unexpected_message);
         }
 
+        TlsProtocol.establishMasterSecret(state.serverContext, state.keyExchange);
         recordLayer.initPendingEpoch(state.server.getCipher());
 
         /*
@@ -337,7 +339,7 @@ public class DTLSServerProtocol
 
         TlsUtils.writeVersion(state.serverContext.getServerVersion(), buf);
 
-        buf.write(securityParameters.serverRandom);
+        buf.write(securityParameters.getServerRandom());
 
         /*
          * The server may return an empty session_id to indicate that the session will not be cached
@@ -404,10 +406,11 @@ public class DTLSServerProtocol
 
             securityParameters.truncatedHMac = TlsExtensionsUtils.hasTruncatedHMacExtension(state.serverExtensions);
 
-            // TODO[RFC 3546] Should this code check that the 'extension_data' is empty?
-            state.allowCertificateStatus = state.serverExtensions.containsKey(TlsExtensionsUtils.EXT_status_request);
+            state.allowCertificateStatus = TlsUtils.hasExpectedEmptyExtensionData(state.serverExtensions,
+                TlsExtensionsUtils.EXT_status_request, AlertDescription.internal_error);
 
-            state.expectSessionTicket = state.serverExtensions.containsKey(TlsProtocol.EXT_SessionTicket);
+            state.expectSessionTicket = TlsUtils.hasExpectedEmptyExtensionData(state.serverExtensions,
+                TlsProtocol.EXT_SessionTicket, AlertDescription.internal_error);
 
             TlsProtocol.writeExtensions(buf, state.serverExtensions);
         }
@@ -618,8 +621,6 @@ public class DTLSServerProtocol
         state.keyExchange.processClientKeyExchange(buf);
 
         TlsProtocol.assertEmpty(buf);
-
-        TlsProtocol.establishMasterSecret(state.serverContext, state.keyExchange);
     }
 
     protected void processClientSupplementalData(ServerHandshakeState state, byte[] body)
